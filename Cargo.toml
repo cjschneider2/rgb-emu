@@ -1,0 +1,6 @@
+[package]
+name = "rgb"
+version = "0.1.0"
+authors = ["Charles J. Schneider <schneider@br-tech.de>"]
+
+[dependencies]
