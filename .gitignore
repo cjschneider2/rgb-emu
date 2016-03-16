@@ -1,3 +1,6 @@
+# vim files
+*.swp
+
 # Compiled files
 *.o
 *.so
