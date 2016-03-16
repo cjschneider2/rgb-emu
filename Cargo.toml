@@ -1,6 +1,7 @@
 [package]
 name = "rgb"
-version = "0.1.0"
-authors = ["Charles J. Schneider <schneider@br-tech.de>"]
+version = "0.0.1"
+authors = ["Charles J. Schneider <cjschneider2@gmail.com>"]
 
 [dependencies]
+gtk = "0.0.7"
