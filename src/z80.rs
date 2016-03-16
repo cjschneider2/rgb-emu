@@ -1,3 +1,4 @@
+use mmu::MMU;
 
 // NOTE:IMPLEMENTATION: Even though it's an 8 bit micro-processor, I don't
 // really want to worry about roll-over operations in rust
@@ -6,16 +7,16 @@
 struct Z80 {
     clock_m: f32,
     clock_t: f32,
-    reg_a:   i16,
-    reg_b:   i16,
-    reg_c:   i16,
-    reg_d:   i16,
-    reg_e:   i16,
-    reg_h:   i16,
-    reg_l:   i16,
-    reg_f:   i16,
-    reg_pc:  i16,
-    reg_sp:  i16,
+    reg_a:   u8,
+    reg_b:   u8,
+    reg_c:   u8,
+    reg_d:   u8,
+    reg_e:   u8,
+    reg_h:   u8,
+    reg_l:   u8,
+    reg_f:   u8,
+    reg_pc:  u16,
+    reg_sp:  u16,
     reg_m:   i16,
     reg_t:   i16,
 }
@@ -63,5 +64,33 @@ impl Z80 {
     /// (NOP): No-operation
     pub fn nop(&mut self) {
         self.reg_m = 1; self.reg_t = 4;// 1 M-time taken
+    }
+
+    // memory handling instructions
+
+    /// (PUSH BC): Push reg_b and reg_c onto the stack
+    pub fn push_bc(&mut self, mmu: MMU) {
+        self.reg_sp -= 1; // decrement stack pointer
+        mmu.wb(self.reg_sp, self.reg_b); // Write reg_b
+        self.reg_sp -= 1; // decrement stack pointer
+        mmu.wb(self.reg_sp, self.reg_c); // Write reg_c
+        self.reg_m = 3; self.reg_t = 12; // 3 M-times taken
+    }
+
+    /// (POP HL): Pop reg_h and reg_l off of the stack
+    pub fn pop_hl(&mut self, mmu: MMU) {
+        self.reg_l = mmu.rb(self.reg_sp); // read reg_l
+        self.reg_sp += 1; // increment stack pointer
+        self.reg_h = mmu.rb(self.reg_sp); // read reg_h
+        self.reg_sp += 1; // increment stack pointer
+        self.reg_m = 3; self.reg_t = 12; // 3 M-times taken
+    }
+
+    /// (LD A, Addr): Read a byte from an absolute address into reg_a
+    pub fn ld_amm(&mut self, mmu: MMU) {
+        let addr = mmu.rw(self.reg_pc); // get address from instruction
+        self.reg_pc += 2; // increment program counter
+        self.reg_a = mmu.rb(addr); // read from the address
+        self.reg_m = 4; self.reg_t = 16; // 4 M-times taken
     }
 }
