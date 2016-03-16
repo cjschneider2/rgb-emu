@@ -1,6 +1,7 @@
 extern crate gtk;
 
 mod z80;
+mod mmu;
 
 use gtk::prelude::*;
 use gtk::{Window, WindowType};
