@@ -41,6 +41,15 @@ impl Z80 {
         }
     }
 
+    /// Resets processor state
+    pub fn reset(&mut self) {
+        self.clock_m = 0.0; self.clock_t = 0.0;
+        self.reg_a =  0; self.reg_b =  0; self.reg_c =  0;
+        self.reg_d =  0; self.reg_e =  0; self.reg_h =  0;
+        self.reg_l =  0; self.reg_f =  0; self.reg_pc = 0;
+        self.reg_sp = 0; self.reg_m =  0; self.reg_t =  0;
+    }
+
     /// (ADD A, E): Add reg_e to reg_a, result in reg_a
     pub fn addr_e(&mut self) {
         self.reg_a += self.reg_e; // add operation
