@@ -3,10 +3,21 @@ extern crate gtk;
 mod z80;
 mod mmu;
 
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use gtk::prelude::*;
 use gtk::{Window, WindowType};
 
+use z80::Z80;
+use mmu::MMU;
+
 fn main() {
+
+    // Initalize the emulator hardware
+    let mut mmu:Rc<RefCell<_>> = Rc::new(RefCell::new(MMU::new()));
+    let mut cpu = Z80::new(mmu.clone());
+
     // Initialize GTK
     if gtk::init().is_err() {
         println!("Failed to initialize GTK.");
