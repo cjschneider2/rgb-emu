@@ -254,6 +254,23 @@ impl Z80 {
         self.reg_m = 3;
     }
 
+    /// (LOAD (BC), A)
+    pub fn ld_bc_a(&mut self) {
+        self.mmu.borrow_mut().wb(
+            &self,
+            (self.reg_b as u16) << 8 + self.reg_c as u16,
+            self.reg_a
+            );
+        self.reg_m=2;
+    }
+    pub fn ld_de_a(&mut self) {
+        self.mmu.borrow_mut().wb(
+            &self,
+            (self.reg_d as u16) << 8 + self.reg_e as u16,
+            self.reg_a
+            );
+        self.reg_m=2;
+    }
 
 
     /// (ADD A, E): Add reg_e to reg_a, result in reg_a
