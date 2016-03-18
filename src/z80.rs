@@ -127,7 +127,6 @@ impl Z80 {
     pub fn ld_a_h(&mut self) { self.reg_a = self.reg_h; self.reg_m = 1; self.reg_t = 4;}
     pub fn ld_a_l(&mut self) { self.reg_a = self.reg_l; self.reg_m = 1; self.reg_t = 4;}
     pub fn ld_a_a(&mut self) { self.reg_a = self.reg_a; self.reg_m = 1; self.reg_t = 4;}
-
     /// (LOAD B, (HL))
     pub fn ld_b_hl(&mut self) {
         let addr:u16 = ((self.reg_h as u16) << 8u16) + self.reg_l as u16;
@@ -170,80 +169,91 @@ impl Z80 {
         self.reg_a = self.mmu.borrow_mut().rb(&self, addr);
         self.reg_m=2; self.reg_t=8;
     }
-
     /// (LOAD (HL), B)
     pub fn ld_hl_b(&mut self) {
         let addr:u16 = (self.reg_h as u16) << 8 + self.reg_l as u16;
         self.mmu.borrow_mut().wb( &self, addr, self.reg_b);
         self.reg_m=2;
     }
+    /// (LOAD (HL), C)
     pub fn ld_hl_c(&mut self) {
         let addr:u16 = (self.reg_h as u16) << 8 + self.reg_l as u16;
         self.mmu.borrow_mut().wb( &self, addr, self.reg_c);
         self.reg_m=2;
     }
+    /// (LOAD (HL), D)
     pub fn ld_hl_d(&mut self) {
         let addr:u16 = (self.reg_h as u16) << 8 + self.reg_l as u16;
         self.mmu.borrow_mut().wb( &self, addr, self.reg_d);
         self.reg_m=2;
     }
+    /// (LOAD (HL), E)
     pub fn ld_hl_e(&mut self) {
         let addr:u16 = (self.reg_h as u16) << 8 + self.reg_l as u16;
         self.mmu.borrow_mut().wb( &self, addr, self.reg_e);
         self.reg_m=2;
     }
+    /// (LOAD (HL), H)
     pub fn ld_hl_h(&mut self) {
         let addr:u16 = (self.reg_h as u16) << 8 + self.reg_l as u16;
         self.mmu.borrow_mut().wb( &self, addr, self.reg_h);
         self.reg_m=2;
     }
+    /// (LOAD (HL), L)
     pub fn ld_hl_l(&mut self) {
         let addr:u16 = (self.reg_h as u16) << 8 + self.reg_l as u16;
         self.mmu.borrow_mut().wb( &self, addr, self.reg_l);
         self.reg_m=2;
     }
+    /// (LOAD (HL), A)
     pub fn ld_hl_a(&mut self) {
         let addr:u16 = (self.reg_h as u16) << 8 + self.reg_l as u16;
         self.mmu.borrow_mut().wb( &self, addr, self.reg_a);
         self.reg_m=2;
     }
-
-    /// (LOAD A, n)
+    /// (LOAD B, n)
     pub fn ld_b_n(&mut self) {
         self.reg_b = self.mmu.borrow_mut().rb( &self, self.reg_pc);
         self.reg_pc += 1;
         self.reg_m = 2;
     }
+    /// (LOAD C, n)
     pub fn ld_c_n(&mut self) {
         self.reg_c = self.mmu.borrow_mut().rb( &self, self.reg_pc);
         self.reg_pc += 1;
         self.reg_m = 2;
     }
+    /// (LOAD D, n)
     pub fn ld_d_n(&mut self) {
         self.reg_d = self.mmu.borrow_mut().rb( &self, self.reg_pc);
         self.reg_pc += 1;
         self.reg_m = 2;
     }
+    /// (LOAD E, n)
     pub fn ld_e_n(&mut self) {
         self.reg_e = self.mmu.borrow_mut().rb( &self, self.reg_pc);
         self.reg_pc += 1;
         self.reg_m = 2;
     }
+    /// (LOAD H, n)
     pub fn ld_h_n(&mut self) {
         self.reg_h = self.mmu.borrow_mut().rb( &self, self.reg_pc);
         self.reg_pc += 1;
         self.reg_m = 2;
     }
+    /// (LOAD L, n)
     pub fn ld_l_n(&mut self) {
         self.reg_l = self.mmu.borrow_mut().rb( &self, self.reg_pc);
         self.reg_pc += 1;
         self.reg_m = 2;
     }
+    /// (LOAD A, n)
     pub fn ld_a_n(&mut self) {
         self.reg_a = self.mmu.borrow_mut().rb( &self, self.reg_pc);
         self.reg_pc += 1;
         self.reg_m = 2;
     }
+    /// (LOAD (HL), n)
     pub fn ld_hl_n(&mut self) {
         self.mmu.borrow_mut().wb(
             &self,
@@ -253,7 +263,6 @@ impl Z80 {
         self.reg_pc += 1;
         self.reg_m = 3;
     }
-
     /// (LOAD (BC), A)
     pub fn ld_bc_a(&mut self) {
         self.mmu.borrow_mut().wb(
@@ -263,6 +272,7 @@ impl Z80 {
             );
         self.reg_m=2;
     }
+    /// (LOAD (DE), A)
     pub fn ld_de_a(&mut self) {
         self.mmu.borrow_mut().wb(
             &self,
@@ -270,6 +280,81 @@ impl Z80 {
             self.reg_a
             );
         self.reg_m=2;
+    }
+    /// (LOAD Addr, A):
+    pub fn ld_mm_a(&mut self) {
+        self.mmu.borrow_mut().wb(
+            &self,
+            self.mmu.borrow_mut().rw(&self, self.reg_pc),
+            self.reg_a
+            );
+        self.reg_pc += 2;
+        self.reg_m = 4;
+    }
+    /// (LOAD A, (BC)):
+    pub fn ld_a_bc(&mut self) {
+        self.reg_a = self.mmu.borrow_mut().rb(
+            &self,
+            (self.reg_b as u16) << 8 + self.reg_c as u16
+            );
+        self.reg_m=2;
+    }
+    /// (LOAD A, (DE)):
+    pub fn ld_a_de(&mut self) {
+        self.reg_a = self.mmu.borrow_mut().rb(
+            &self,
+            (self.reg_d as u16) << 8 + self.reg_e as u16
+            );
+        self.reg_m=2;
+    }
+    /// (LOAD A, Addr): Read a byte from an absolute address into reg_a
+    pub fn ld_a_mm(&mut self) {
+        let addr = self.mmu.borrow_mut().rw(&self, self.reg_pc);
+        self.reg_pc += 2;
+        self.reg_a = self.mmu.borrow_mut().rb(&self, addr);
+        self.reg_m = 4; self.reg_t = 16;
+    }
+    /// (LOAD, (BC), nn)
+    pub fn ld_bc_nn(&mut self) {
+        self.reg_c = self.mmu.borrow_mut().rb( &self, self.reg_pc );
+        self.reg_b = self.mmu.borrow_mut().rb( &self, self.reg_pc + 1 );
+        self.reg_pc += 2;
+        self.reg_m = 3;
+    }
+    /// (LOAD, (DE), nn)
+    pub fn ld_de_nn(&mut self) {
+        self.reg_e = self.mmu.borrow_mut().rb( &self, self.reg_pc );
+        self.reg_d = self.mmu.borrow_mut().rb( &self, self.reg_pc + 1 );
+        self.reg_pc += 2;
+        self.reg_m = 3;
+    }
+    /// (LOAD, (HL), nn)
+    pub fn ld_hl_nn(&mut self) {
+        self.reg_l = self.mmu.borrow_mut().rb( &self, self.reg_pc );
+        self.reg_h = self.mmu.borrow_mut().rb( &self, self.reg_pc + 1 );
+        self.reg_pc += 2;
+        self.reg_m = 3;
+    }
+    /// (LOAD, (SP), nn)
+    pub fn ld_sp_nn(&mut self) {
+        self.reg_sp = self.mmu.borrow_mut().rw( &self, self.reg_pc );
+        self.reg_pc += 2;
+        self.reg_m = 3;
+    }
+    /// (LOAD, (HL), mm)
+    pub fn ld_hl_mm(&mut self) {
+        let addr = self.mmu.borrow_mut().rw( &self, self.reg_pc );
+        self.reg_pc += 2;
+        self.reg_l = self.mmu.borrow_mut().rb( &self, addr );
+        self.reg_h = self.mmu.borrow_mut().rb( &self, addr + 1);
+        self.reg_m = 5;
+    }
+    /// (LOAD, mm, (HL))
+    pub fn ld_mm_hl(&mut self) {
+        let addr = self.mmu.borrow_mut().rw( &self, self.reg_pc );
+        self.reg_pc+=2;
+        self.mmu.borrow_mut().ww(&self, addr,(self.reg_h as u16) << 8 + self.reg_l as u16);
+        self.reg_m = 5;
     }
 
 
@@ -281,7 +366,6 @@ impl Z80 {
         self.reg_a &= 0xFF;
         self.reg_m = 1; self.reg_t = 4;
     }
-
     /// (CP A, B): Compare reg_b to reg_a, setting flags
     pub fn cpr_b(&mut self) {
         let mut tmp = self.reg_a;
@@ -291,9 +375,7 @@ impl Z80 {
         if tmp < 0 { self.reg_f |= 0x10; }
         self.reg_m = 1; self.reg_t = 4;
     }
-
-    // memory handling instructions
-
+// memory handling instructions
     /// (PUSH BC): Push reg_b and reg_c onto the stack
     pub fn push_bc(&mut self) {
         self.reg_sp -= 1;
@@ -312,13 +394,6 @@ impl Z80 {
         self.reg_m = 3; self.reg_t = 12;
     }
 
-    /// (LD A, Addr): Read a byte from an absolute address into reg_a
-    pub fn ld_amm(&mut self) {
-        let addr = self.mmu.borrow_mut().rw(&self, self.reg_pc);
-        self.reg_pc += 2;
-        self.reg_a = self.mmu.borrow_mut().rb(&self, addr);
-        self.reg_m = 4; self.reg_t = 16;
-    }
 }
 
 /// A defined type for our ops?
@@ -592,7 +667,7 @@ static cpu_map: [CpuOp; 256] =
     Z80::nop,
     Z80::nop,
     Z80::undef,
-    Z80::ld_amm,
+    Z80::ld_a_mm,
     Z80::ei,
     Z80::undef,
     Z80::undef,
