@@ -874,6 +874,136 @@ impl Z80 {
         self.reg_m = 2;
     }
 
+    /// (SBC (B)): Subtract from (B) and Carry flag from (A)
+    pub fn sbc_b(&mut self) {
+        let a = self.reg_a;
+        self.reg_a -= self.reg_b;
+        self.reg_a -= if (self.reg_f & 0x10) != 0 { 1 } else { 0 };
+        self.reg_f = if (self.reg_a<0) { 0x50 } else { 0x40 };
+        self.reg_a &= 255;
+        if self.reg_a == 0 {
+            self.reg_f |= 0x80;
+        }
+        if ((self.reg_a ^ self.reg_b ^ a) & 0x10) != 0 {
+            self.reg_f |= 0x20;
+        }
+        self.reg_m = 1;
+    }
+    pub fn sbc_c(&mut self) {
+        let a = self.reg_a;
+        self.reg_a -= self.reg_c;
+        self.reg_a -= if (self.reg_f & 0x10) != 0 { 1 } else { 0 };
+        self.reg_f = if (self.reg_a<0) { 0x50 } else { 0x40 };
+        self.reg_a &= 255;
+        if self.reg_a == 0 {
+            self.reg_f |= 0x80;
+        }
+        if ((self.reg_a ^ self.reg_c ^ a) & 0x10) != 0 {
+            self.reg_f |= 0x20;
+        }
+        self.reg_m = 1;
+    }
+    pub fn sbc_d(&mut self) {
+        let a = self.reg_a;
+        self.reg_a -= self.reg_d;
+        self.reg_a -= if (self.reg_f & 0x10) != 0 { 1 } else { 0 };
+        self.reg_f = if (self.reg_a<0) { 0x50 } else { 0x40 };
+        self.reg_a &= 255;
+        if self.reg_a == 0 {
+            self.reg_f |= 0x80;
+        }
+        if ((self.reg_a ^ self.reg_d ^ a) & 0x10) != 0 {
+            self.reg_f |= 0x20;
+        }
+        self.reg_m = 1;
+    }
+    pub fn sbc_e(&mut self) {
+        let a = self.reg_a;
+        self.reg_a -= self.reg_e;
+        self.reg_a -= if (self.reg_f & 0x10) != 0 { 1 } else { 0 };
+        self.reg_f = if (self.reg_a<0) { 0x50 } else { 0x40 };
+        self.reg_a &= 255;
+        if self.reg_a == 0 {
+            self.reg_f |= 0x80;
+        }
+        if ((self.reg_a ^ self.reg_e ^ a) & 0x10) != 0 {
+            self.reg_f |= 0x20;
+        }
+        self.reg_m = 1;
+    }
+    pub fn sbc_h(&mut self) {
+        let a = self.reg_a;
+        self.reg_a -= self.reg_h;
+        self.reg_a -= if (self.reg_f & 0x10) != 0 { 1 } else { 0 };
+        self.reg_f = if (self.reg_a<0) { 0x50 } else { 0x40 };
+        self.reg_a &= 255;
+        if self.reg_a == 0 {
+            self.reg_f |= 0x80;
+        }
+        if ((self.reg_a ^ self.reg_h ^ a) & 0x10) != 0 {
+            self.reg_f |= 0x20;
+        }
+        self.reg_m = 1;
+    }
+    pub fn sbc_l(&mut self) {
+        let a = self.reg_a;
+        self.reg_a -= self.reg_l;
+        self.reg_a -= if (self.reg_f & 0x10) != 0 { 1 } else { 0 };
+        self.reg_f = if (self.reg_a<0) { 0x50 } else { 0x40 };
+        self.reg_a &= 255;
+        if self.reg_a == 0 {
+            self.reg_f |= 0x80;
+        }
+        if ((self.reg_a ^ self.reg_l ^ a) & 0x10) != 0 {
+            self.reg_f |= 0x20;
+        }
+        self.reg_m = 1;
+    }
+    pub fn sbc_a(&mut self) {
+        let a = self.reg_a;
+        self.reg_a -= self.reg_a;
+        self.reg_a -= if (self.reg_f & 0x10) != 0 { 1 } else { 0 };
+        self.reg_f = if (self.reg_a<0) { 0x50 } else { 0x40 };
+        self.reg_a &= 255;
+        if self.reg_a == 0 {
+            self.reg_f |= 0x80;
+        }
+        if ((self.reg_a ^ self.reg_a ^ a) & 0x10) != 0 {
+            self.reg_f |= 0x20;
+        }
+        self.reg_m = 1;
+    }
+    pub fn sbc_hl(&mut self) {
+        let a = self.reg_a;
+        let m = self.mmu.borrow_mut().rb(&self, (self.reg_h as u16) << 8 + self.reg_l as u16);
+        self.reg_a -= m;
+        self.reg_a -= if (self.reg_f & 0x10) != 0 { 1 } else { 0 };
+        self.reg_f = if self.reg_a < 0 { 0x50 } else { 0x40 };
+        self.reg_a &= 255;
+        if self.reg_a == 0 {
+            self.reg_f |= 0x80;
+        }
+        if ((self.reg_a ^ m ^ a) & 0x10) != 0 {
+            self.reg_f |= 0x20;
+        }
+        self.reg_m = 2;
+    }
+    pub fn sbc_n(&mut self) {
+        let a = self.reg_a;
+        let m = self.mmu.borrow_mut().rb(&self, self.reg_pc);
+        self.reg_a -= m;
+        self.reg_pc += 1;
+        self.reg_a -= if (self.reg_f & 0x10) != 0 { 1 } else { 0 };
+        self.reg_f = if self.reg_a < 0 { 0x50 } else { 0x40 };
+        self.reg_a &= 255;
+        if self.reg_a == 0 {
+            self.reg_f |= 0x80;
+        }
+        if ((self.reg_a ^ m ^ a) & 0x10) != 0 {
+            self.reg_f |= 0x20;
+        }
+        self.reg_m = 2;
+    }
 
     /// (ADD A, E): Add reg_e to reg_a, result in reg_a
     pub fn addr_e(&mut self) {
