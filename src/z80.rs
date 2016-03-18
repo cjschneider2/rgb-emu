@@ -414,7 +414,70 @@ impl Z80 {
         self.mmu.borrow_mut().wb(&self, 0xFF00 + self.reg_c as u16, self.reg_a);
         self.reg_m = 2;
     }
+    /// (LOAD, (HL), (SP))
+    pub fn ld_hl_sp(&mut self) {
+        let mut addr = self.mmu.borrow_mut().rb(&self, self.reg_pc);
+        if addr > 127 {
+            addr = addr - ((!addr + 1) & 255);
+        }
+        self.reg_pc += 1;
+        let addr = addr as u16 + self.reg_sp;
+        self.reg_h = ((addr >> 8) & 255) as u8;
+        self.reg_l = (addr & 255) as u8;
+        self.reg_m = 3;
+    }
+// memory swap operations
+    /// (SWAP B): Swaps higher and lower bits in register B
+    pub fn swap_b(&mut self) {
+        let mut tr = self.reg_b;
+        self.reg_b = (( tr & 0xF) << 4) | ((tr & 0xF0) >> 4);
+        self.reg_f = if self.reg_b != 0 { 0 } else { 0x80 };
+        self.reg_m = 1;
+    }
+    /// (SWAP C):
+    pub fn swap_c(&mut self) {
+        let mut tr = self.reg_c;
+        self.reg_c = (( tr & 0xF) << 4) | ((tr & 0xF0) >> 4);
+        self.reg_f = if self.reg_c != 0 { 0 } else { 0x80 };
+        self.reg_m = 1;
+    }
+    /// (SWAP D):
+    pub fn swap_d(&mut self) {
+        let mut tr = self.reg_d;
+        self.reg_d = (( tr & 0xF) << 4) | ((tr & 0xF0) >> 4);
+        self.reg_f = if self.reg_d != 0 { 0 } else { 0x80 };
+        self.reg_m = 1;
+    }
+    /// (SWAP E):
+    pub fn swap_e(&mut self) {
+        let mut tr = self.reg_e;
+        self.reg_e = (( tr & 0xF) << 4) | ((tr & 0xF0) >> 4);
+        self.reg_f = if self.reg_e != 0 { 0 } else { 0x80 };
+        self.reg_m = 1;
+    }
+    /// (SWAP H):
+    pub fn swap_h(&mut self) {
+        let mut tr = self.reg_h;
+        self.reg_h = (( tr & 0xF) << 4) | ((tr & 0xF0) >> 4);
+        self.reg_f = if self.reg_h != 0 { 0 } else { 0x80 };
+        self.reg_m = 1;
+    }
+    /// (SWAP L):
+    pub fn swap_l(&mut self) {
+        let mut tr = self.reg_l;
+        self.reg_l = (( tr & 0xF) << 4) | ((tr & 0xF0) >> 4);
+        self.reg_f = if self.reg_l != 0 { 0 } else { 0x80 };
+        self.reg_m = 1;
+    }
+    /// (SWAP A):
+    pub fn swap_a(&mut self) {
+        let mut tr = self.reg_a;
+        self.reg_a = (( tr & 0xF) << 4) | ((tr & 0xF0) >> 4);
+        self.reg_f = if self.reg_a != 0 { 0 } else { 0x80 };
+        self.reg_m = 1;
+    }
 
+// Data processing operations
     /// (ADD A, E): Add reg_e to reg_a, result in reg_a
     pub fn addr_e(&mut self) {
         self.reg_a += self.reg_e; self.reg_f = 0;
