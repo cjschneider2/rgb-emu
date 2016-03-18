@@ -478,6 +478,152 @@ impl Z80 {
     }
 
 // Data processing operations
+
+    pub fn add_b(&mut self) {
+        let a = self.reg_a;
+        self.reg_a += self.reg_b;
+        self.reg_f = if self.reg_a > 255 { 0x10 } else { 0 };
+        self.reg_a &= 255;
+        if self.reg_a != 0 { self.reg_f |= 0x80; };
+        if ((self.reg_a ^ self.reg_b ^ a) & 0x10) != 0 { self.reg_f |= 0x20; };
+        self.reg_m = 1;
+    }
+    pub fn add_c(&mut self) {
+        let a = self.reg_a;
+        self.reg_a += self.reg_c;
+        self.reg_f = if self.reg_a > 255 { 0x10 } else { 0 };
+        self.reg_a &= 255; if self.reg_a != 0 { self.reg_f |= 0x80; };
+        if ((self.reg_a ^ self.reg_c ^ a) & 0x10) != 0 { self.reg_f |= 0x20; }
+        self.reg_m = 1;
+    }
+    pub fn add_d(&mut self) {
+        let a = self.reg_a;
+        self.reg_a += self.reg_d;
+        self.reg_f = if self.reg_a > 255 { 0x10 } else { 0 };
+        self.reg_a &= 255; if self.reg_a != 0 { self.reg_f |= 0x80; };
+        if ((self.reg_a ^ self.reg_d ^ a) & 0x10) != 0 { self.reg_f |= 0x20; };
+        self.reg_m = 1;
+    }
+    pub fn add_e(&mut self) {
+        let a = self.reg_a;
+        self.reg_a += self.reg_e;
+        self.reg_f = if self.reg_a > 255 { 0x10 } else { 0 };
+        self.reg_a &= 255; if self.reg_a != 0 { self.reg_f |= 0x80; };
+        if ((self.reg_a ^ self.reg_e ^ a) & 0x10) != 0 { self.reg_f |= 0x20; };
+        self.reg_m = 1;
+    }
+    pub fn add_h(&mut self) {
+        let a = self.reg_a;
+        self.reg_a += self.reg_h;
+        self.reg_f = if self.reg_a > 255 { 0x10 } else { 0 };
+        self.reg_a &= 255; if self.reg_a != 0 { self.reg_f |= 0x80; };
+        if ((self.reg_a ^ self.reg_h ^ a) & 0x10) != 0 { self.reg_f |= 0x20; };
+        self.reg_m = 1;
+    }
+    pub fn add_l(&mut self) {
+        let a = self.reg_a;
+        self.reg_a += self.reg_l;
+        self.reg_f = if self.reg_a > 255 { 0x10 } else { 0 };
+        self.reg_a &= 255; if self.reg_a != 0 { self.reg_f |= 0x80; };
+        if ((self.reg_a ^ self.reg_l ^ a) & 0x10) != 0 { self.reg_f |= 0x20; };
+        self.reg_m = 1;
+    }
+    pub fn add_a(&mut self) {
+        let a = self.reg_a;
+        self.reg_a += self.reg_a;
+        self.reg_f = if self.reg_a > 255 { 0x10 } else { 0 };
+        self.reg_a &= 255; if self.reg_a != 0 { self.reg_f |= 0x80; };
+        if ((self.reg_a ^ self.reg_a ^ a) & 0x10) != 0 { self.reg_f |= 0x20; };
+        self.reg_m = 1;
+    }
+    pub fn add_hl(&mut self) {
+        let a = self.reg_a;
+        let m = self.mmu.borrow_mut().rb(&self, (self.reg_h as u16) << 8 + self.reg_l as u16);
+        self.reg_a += m;
+        self.reg_f = if self.reg_a > 255 { 0x10 } else { 0 };
+        self.reg_a &= 255;
+        if self.reg_a != 0 {
+            self.reg_f |= 0x80;
+        };
+        if ((self.reg_a ^ a ^ m) & 0x10) != 0 {
+            self.reg_f |= 0x20;
+        }
+        self.reg_m=2;
+    }
+    pub fn add_n(&mut self) {
+        let a = self.reg_a;
+        let m = self.mmu.borrow_mut().rb(&self, self.reg_pc);
+        self.reg_a += m;
+        self.reg_pc += 1;
+        self.reg_f = if self.reg_a > 255 { 0x10 } else { 0 };
+        self.reg_a &= 255;
+        if self.reg_a != 0 {
+            self.reg_f |= 0x80;
+        }
+        if ((self.reg_a ^ a ^ m ) & 0x10 ) != 0 {
+            self.reg_f |= 0x20;
+        }
+        self.reg_m = 2;
+    }
+    pub fn add_hl_bc(&mut self) {
+        let mut hl:u32 = (self.reg_h as u32) << 8 + self.reg_l as u32;
+        hl += (self.reg_b as u32) << 8 + self.reg_c as u32;
+        // TODO: checked overflow
+        if hl > 65535 {
+            self.reg_f |= 0x10;
+        } else {
+            self.reg_f &= 0xEF;
+        }
+        self.reg_h = (( hl >> 8) & 255) as u8;
+        self.reg_l = (hl & 255) as u8;
+        self.reg_m = 3;
+    }
+    pub fn add_hl_de(&mut self) {
+        let mut hl:u32 = (self.reg_h as u32) << 8 + self.reg_l as u32;
+        hl += (self.reg_d as u32) << 8 + self.reg_e as u32;
+        if hl > 65535 {
+            self.reg_f |= 0x10;
+        } else {
+            self.reg_f &= 0xEF;
+        }
+        self.reg_h = ((hl >> 8) & 255) as u8;
+        self.reg_l = (hl & 255) as u8;
+        self.reg_m = 3;
+    }
+    pub fn add_hl_hl(&mut self) {
+        let mut hl:u32 = (self.reg_h as u32) << 8 + self.reg_l as u32;
+        hl += (self.reg_h as u32) << 8 + self.reg_l as u32;
+        if hl > 65535 {
+            self.reg_f |= 0x10;
+        } else {
+            self.reg_f &= 0xEF;
+        }
+        self.reg_h = ((hl >> 8) & 255) as u8;
+        self.reg_l = (hl & 255) as u8;
+        self.reg_m = 3;
+    }
+    pub fn add_hl_sp(&mut self) {
+        let mut hl = (self.reg_h as u32) << 8 + self.reg_l as u32;
+        hl += self.reg_sp as u32;
+        if hl > 65535 {
+            self.reg_f |= 0x10;
+        } else {
+            self.reg_f &= 0xEF;
+        }
+        self.reg_h = ((hl>>8) & 255) as u8;
+        self.reg_l = (hl&255) as u8;
+        self.reg_m = 3;
+    }
+    pub fn add_sp_n (&mut self) {
+        let mut n = self.mmu.borrow_mut().rb(&self, self.reg_pc);
+        if n > 127 {
+            n -= (!n + 1) & 255;
+        }
+        self.reg_pc += 1;
+        self.reg_sp += n as u16;
+        self.reg_m = 4;
+    }
+
     /// (ADD A, E): Add reg_e to reg_a, result in reg_a
     pub fn addr_e(&mut self) {
         self.reg_a += self.reg_e; self.reg_f = 0;
