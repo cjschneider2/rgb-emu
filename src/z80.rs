@@ -208,6 +208,44 @@ impl Z80 {
         self.reg_m=2;
     }
 
+    /// (LOAD A, n)
+    pub fn LDrn_b(&mut self) {
+        self.reg_b = self.mmu.borrow_mut().rb( &self, self.reg_pc);
+        self.reg_pc += 1;
+        self.reg_m = 2;
+    }
+    pub fn LDrn_c(&mut self) {
+        self.reg_c = self.mmu.borrow_mut().rb( &self, self.reg_pc);
+        self.reg_pc += 1;
+        self.reg_m = 2;
+    }
+    pub fn LDrn_d(&mut self) {
+        self.reg_d = self.mmu.borrow_mut().rb( &self, self.reg_pc);
+        self.reg_pc += 1;
+        self.reg_m = 2;
+    }
+    pub fn LDrn_e(&mut self) {
+        self.reg_e = self.mmu.borrow_mut().rb( &self, self.reg_pc);
+        self.reg_pc += 1;
+        self.reg_m = 2;
+    }
+    pub fn LDrn_h(&mut self) {
+        self.reg_h = self.mmu.borrow_mut().rb( &self, self.reg_pc);
+        self.reg_pc += 1;
+        self.reg_m = 2;
+    }
+    pub fn LDrn_l(&mut self) {
+        self.reg_l = self.mmu.borrow_mut().rb( &self, self.reg_pc);
+        self.reg_pc += 1;
+        self.reg_m = 2;
+    }
+    pub fn LDrn_a(&mut self) {
+        self.reg_a = self.mmu.borrow_mut().rb( &self, self.reg_pc);
+        self.reg_pc += 1;
+        self.reg_m = 2;
+    }
+
+
 
     /// (ADD A, E): Add reg_e to reg_a, result in reg_a
     pub fn addr_e(&mut self) {
