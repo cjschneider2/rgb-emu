@@ -356,7 +356,64 @@ impl Z80 {
         self.mmu.borrow_mut().ww(&self, addr,(self.reg_h as u16) << 8 + self.reg_l as u16);
         self.reg_m = 5;
     }
-
+    /// (LOAD, (HL), (ia))
+    pub fn ld_hl_ia(&mut self) {
+        self.mmu.borrow_mut().wb( &self, (self.reg_h as u16) << 8 + self.reg_l, self.reg_a);
+        self.reg_l = (self.reg_l + 1) & 255;
+        if self.reg_l != 0 {
+            self.reg_h = (self.reg_h + 1) & 255;
+        }
+        self.reg_m = 2;
+    }
+    /// (LOAD, (HL), (da))
+    pub fn ld_hl_da(&mut self) {
+        self.mmu.borrow_mut().wb( &self, (self.reg_h as u16) << 8 + self.reg_l as u16, self.reg_a);
+        self.reg_l = (self.reg_l - 1) & 255;
+        if self.reg_l == 255 {
+            self.reg_h = (self.reg_h - 1) & 255;
+        }
+        self.reg_m = 2;
+    }
+    /// (LOAD, (AH), (li))
+    pub fn ld_ah_li(&mut self) {
+        self.reg_a = self.mmu.borrow_mut().rb(&self, (self.reg_h as u16) << 8 + self.reg_l as u16);
+        self.reg_l = (self.reg_l + 1) & 255;
+        if self.reg_l != 0 {
+            self.reg_h = (self.reg_h + 1) & 255;
+        }
+        self.reg_m = 2;
+    }
+    /// (LOAD, (AH), (ld))
+    pub fn ld_ah_ld(&mut self) {
+        self.reg_a = self.mmu.borrow_mut().rb(&self, (self.reg_h as u16) << 8 + self.reg_l as u16);
+        self.reg_l = (self.reg_l - 1) & 255;
+        if self.reg_l == 255 {
+            self.reg_h = (self.reg_h - 1) & 255;
+        }
+        self.reg_m = 2;
+    }
+    /// (LOAD, A, (io))
+    pub fn ld_a_io(&mut self) {
+        self.reg_a = self.mmu.borrow_mut().rb(&self, 0xFF00 + self.mmu.borrow_mut().rb(&self, self.reg_pc) as u16);
+        self.reg_pc += 1;
+        self.reg_m = 3;
+    }
+    /// (LOAD, (io), A)
+    pub fn ld_io_a(&mut self) {
+        self.mmu.borrow_mut().wb(&self, 0xFF00 + self.mmu.borrow_mut().rb(&self, self.reg_pc) as u16, self.reg_a);
+        self.reg_pc += 1;
+        self.reg_m = 3;
+    }
+    /// (LOAD, A, (ioc))
+    pub fn ld_a_ioc(&mut self) {
+        self.reg_a = self.mmu.borrow_mut().rb(&self, 0xFF00 + self.reg_c as u16);
+        self.reg_m = 2;
+    }
+    /// (LOAD, (ioc), A)
+    pub fn ld_ioc_a(&mut self) {
+        self.mmu.borrow_mut().wb(&self, 0xFF00 + self.reg_c as u16, self.reg_a);
+        self.reg_m = 2;
+    }
 
     /// (ADD A, E): Add reg_e to reg_a, result in reg_a
     pub fn addr_e(&mut self) {
