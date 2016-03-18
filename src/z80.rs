@@ -1005,14 +1005,558 @@ impl Z80 {
         self.reg_m = 2;
     }
 
-    /// (ADD A, E): Add reg_e to reg_a, result in reg_a
-    pub fn addr_e(&mut self) {
-        self.reg_a += self.reg_e; self.reg_f = 0;
-        if (self.reg_a & 0xFF) == 0 { self.reg_f |= 0x80; }
-        if self.reg_a > 0xFF { self.reg_f |= 0x10; }
-        self.reg_a &= 0xFF;
-        self.reg_m = 1; self.reg_t = 4;
+/*
+    CPr_b: function() { var i=Z80._r.a; i-=Z80._r.b; Z80._r.f=(i<0)?0x50:0x40; i&=255; if(!i) Z80._r.f|=0x80; if((Z80._r.a^Z80._r.b^i)&0x10) Z80._r.f|=0x20; Z80._r.m=1; },
+    CPr_c: function() { var i=Z80._r.a; i-=Z80._r.c; Z80._r.f=(i<0)?0x50:0x40; i&=255; if(!i) Z80._r.f|=0x80; if((Z80._r.a^Z80._r.c^i)&0x10) Z80._r.f|=0x20; Z80._r.m=1; },
+    CPr_d: function() { var i=Z80._r.a; i-=Z80._r.d; Z80._r.f=(i<0)?0x50:0x40; i&=255; if(!i) Z80._r.f|=0x80; if((Z80._r.a^Z80._r.d^i)&0x10) Z80._r.f|=0x20; Z80._r.m=1; },
+    CPr_e: function() { var i=Z80._r.a; i-=Z80._r.e; Z80._r.f=(i<0)?0x50:0x40; i&=255; if(!i) Z80._r.f|=0x80; if((Z80._r.a^Z80._r.e^i)&0x10) Z80._r.f|=0x20; Z80._r.m=1; },
+    CPr_h: function() { var i=Z80._r.a; i-=Z80._r.h; Z80._r.f=(i<0)?0x50:0x40; i&=255; if(!i) Z80._r.f|=0x80; if((Z80._r.a^Z80._r.h^i)&0x10) Z80._r.f|=0x20; Z80._r.m=1; },
+    CPr_l: function() { var i=Z80._r.a; i-=Z80._r.l; Z80._r.f=(i<0)?0x50:0x40; i&=255; if(!i) Z80._r.f|=0x80; if((Z80._r.a^Z80._r.l^i)&0x10) Z80._r.f|=0x20; Z80._r.m=1; },
+    CPr_a: function() { var i=Z80._r.a; i-=Z80._r.a; Z80._r.f=(i<0)?0x50:0x40; i&=255; if(!i) Z80._r.f|=0x80; if((Z80._r.a^Z80._r.a^i)&0x10) Z80._r.f|=0x20; Z80._r.m=1; },
+    CPHL: function() { var i=Z80._r.a; var m=MMU.rb((Z80._r.h<<8)+Z80._r.l); i-=m; Z80._r.f=(i<0)?0x50:0x40; i&=255; if(!i) Z80._r.f|=0x80; if((Z80._r.a^i^m)&0x10) Z80._r.f|=0x20; Z80._r.m=2; },
+    CPn: function() { var i=Z80._r.a; var m=MMU.rb(Z80._r.pc); i-=m; Z80._r.pc++; Z80._r.f=(i<0)?0x50:0x40; i&=255; if(!i) Z80._r.f|=0x80; if((Z80._r.a^i^m)&0x10) Z80._r.f|=0x20; Z80._r.m=2; },
+
+    DAA: function() { var a=Z80._r.a; if((Z80._r.f&0x20)||((Z80._r.a&15)>9)) Z80._r.a+=6; Z80._r.f&=0xEF; if((Z80._r.f&0x20)||(a>0x99)) { Z80._r.a+=0x60; Z80._r.f|=0x10; } Z80._r.m=1; },
+
+    ANDr_b: function() { Z80._r.a&=Z80._r.b; Z80._r.a&=255; Z80._r.f=Z80._r.a?0:0x80; Z80._r.m=1; },
+    ANDr_c: function() { Z80._r.a&=Z80._r.c; Z80._r.a&=255; Z80._r.f=Z80._r.a?0:0x80; Z80._r.m=1; },
+    ANDr_d: function() { Z80._r.a&=Z80._r.d; Z80._r.a&=255; Z80._r.f=Z80._r.a?0:0x80; Z80._r.m=1; },
+    ANDr_e: function() { Z80._r.a&=Z80._r.e; Z80._r.a&=255; Z80._r.f=Z80._r.a?0:0x80; Z80._r.m=1; },
+    ANDr_h: function() { Z80._r.a&=Z80._r.h; Z80._r.a&=255; Z80._r.f=Z80._r.a?0:0x80; Z80._r.m=1; },
+    ANDr_l: function() { Z80._r.a&=Z80._r.l; Z80._r.a&=255; Z80._r.f=Z80._r.a?0:0x80; Z80._r.m=1; },
+    ANDr_a: function() { Z80._r.a&=Z80._r.a; Z80._r.a&=255; Z80._r.f=Z80._r.a?0:0x80; Z80._r.m=1; },
+    ANDHL: function() { Z80._r.a&=MMU.rb((Z80._r.h<<8)+Z80._r.l); Z80._r.a&=255; Z80._r.f=Z80._r.a?0:0x80; Z80._r.m=2; },
+    ANDn: function() { Z80._r.a&=MMU.rb(Z80._r.pc); Z80._r.pc++; Z80._r.a&=255; Z80._r.f=Z80._r.a?0:0x80; Z80._r.m=2; },
+
+    ORr_b: function() { Z80._r.a|=Z80._r.b; Z80._r.a&=255; Z80._r.f=Z80._r.a?0:0x80; Z80._r.m=1; },
+    ORr_c: function() { Z80._r.a|=Z80._r.c; Z80._r.a&=255; Z80._r.f=Z80._r.a?0:0x80; Z80._r.m=1; },
+    ORr_d: function() { Z80._r.a|=Z80._r.d; Z80._r.a&=255; Z80._r.f=Z80._r.a?0:0x80; Z80._r.m=1; },
+    ORr_e: function() { Z80._r.a|=Z80._r.e; Z80._r.a&=255; Z80._r.f=Z80._r.a?0:0x80; Z80._r.m=1; },
+    ORr_h: function() { Z80._r.a|=Z80._r.h; Z80._r.a&=255; Z80._r.f=Z80._r.a?0:0x80; Z80._r.m=1; },
+    ORr_l: function() { Z80._r.a|=Z80._r.l; Z80._r.a&=255; Z80._r.f=Z80._r.a?0:0x80; Z80._r.m=1; },
+    ORr_a: function() { Z80._r.a|=Z80._r.a; Z80._r.a&=255; Z80._r.f=Z80._r.a?0:0x80; Z80._r.m=1; },
+    ORHL: function() { Z80._r.a|=MMU.rb((Z80._r.h<<8)+Z80._r.l); Z80._r.a&=255; Z80._r.f=Z80._r.a?0:0x80; Z80._r.m=2; },
+    ORn: function() { Z80._r.a|=MMU.rb(Z80._r.pc); Z80._r.pc++; Z80._r.a&=255; Z80._r.f=Z80._r.a?0:0x80; Z80._r.m=2; },
+
+    XORr_b: function() { Z80._r.a^=Z80._r.b; Z80._r.a&=255; Z80._r.f=Z80._r.a?0:0x80; Z80._r.m=1; },
+    XORr_c: function() { Z80._r.a^=Z80._r.c; Z80._r.a&=255; Z80._r.f=Z80._r.a?0:0x80; Z80._r.m=1; },
+    XORr_d: function() { Z80._r.a^=Z80._r.d; Z80._r.a&=255; Z80._r.f=Z80._r.a?0:0x80; Z80._r.m=1; },
+    XORr_e: function() { Z80._r.a^=Z80._r.e; Z80._r.a&=255; Z80._r.f=Z80._r.a?0:0x80; Z80._r.m=1; },
+    XORr_h: function() { Z80._r.a^=Z80._r.h; Z80._r.a&=255; Z80._r.f=Z80._r.a?0:0x80; Z80._r.m=1; },
+    XORr_l: function() { Z80._r.a^=Z80._r.l; Z80._r.a&=255; Z80._r.f=Z80._r.a?0:0x80; Z80._r.m=1; },
+    XORr_a: function() { Z80._r.a^=Z80._r.a; Z80._r.a&=255; Z80._r.f=Z80._r.a?0:0x80; Z80._r.m=1; },
+    XORHL: function() { Z80._r.a^=MMU.rb((Z80._r.h<<8)+Z80._r.l); Z80._r.a&=255; Z80._r.f=Z80._r.a?0:0x80; Z80._r.m=2; },
+    XORn: function() { Z80._r.a^=MMU.rb(Z80._r.pc); Z80._r.pc++; Z80._r.a&=255; Z80._r.f=Z80._r.a?0:0x80; Z80._r.m=2; },
+
+    INCr_b: function() { Z80._r.b++; Z80._r.b&=255; Z80._r.f=Z80._r.b?0:0x80; Z80._r.m=1; },
+    INCr_c: function() { Z80._r.c++; Z80._r.c&=255; Z80._r.f=Z80._r.c?0:0x80; Z80._r.m=1; },
+    INCr_d: function() { Z80._r.d++; Z80._r.d&=255; Z80._r.f=Z80._r.d?0:0x80; Z80._r.m=1; },
+    INCr_e: function() { Z80._r.e++; Z80._r.e&=255; Z80._r.f=Z80._r.e?0:0x80; Z80._r.m=1; },
+    INCr_h: function() { Z80._r.h++; Z80._r.h&=255; Z80._r.f=Z80._r.h?0:0x80; Z80._r.m=1; },
+    INCr_l: function() { Z80._r.l++; Z80._r.l&=255; Z80._r.f=Z80._r.l?0:0x80; Z80._r.m=1; },
+    INCr_a: function() { Z80._r.a++; Z80._r.a&=255; Z80._r.f=Z80._r.a?0:0x80; Z80._r.m=1; },
+    INCHLm: function() { var i=MMU.rb((Z80._r.h<<8)+Z80._r.l)+1; i&=255; MMU.wb((Z80._r.h<<8)+Z80._r.l,i); Z80._r.f=i?0:0x80; Z80._r.m=3; },
+
+    DECr_b: function() { Z80._r.b--; Z80._r.b&=255; Z80._r.f=Z80._r.b?0:0x80; Z80._r.m=1; },
+    DECr_c: function() { Z80._r.c--; Z80._r.c&=255; Z80._r.f=Z80._r.c?0:0x80; Z80._r.m=1; },
+    DECr_d: function() { Z80._r.d--; Z80._r.d&=255; Z80._r.f=Z80._r.d?0:0x80; Z80._r.m=1; },
+    DECr_e: function() { Z80._r.e--; Z80._r.e&=255; Z80._r.f=Z80._r.e?0:0x80; Z80._r.m=1; },
+    DECr_h: function() { Z80._r.h--; Z80._r.h&=255; Z80._r.f=Z80._r.h?0:0x80; Z80._r.m=1; },
+    DECr_l: function() { Z80._r.l--; Z80._r.l&=255; Z80._r.f=Z80._r.l?0:0x80; Z80._r.m=1; },
+    DECr_a: function() { Z80._r.a--; Z80._r.a&=255; Z80._r.f=Z80._r.a?0:0x80; Z80._r.m=1; },
+    DECHLm: function() { var i=MMU.rb((Z80._r.h<<8)+Z80._r.l)-1; i&=255; MMU.wb((Z80._r.h<<8)+Z80._r.l,i); Z80._r.f=i?0:0x80; Z80._r.m=3; },
+
+    INCBC: function() { Z80._r.c=(Z80._r.c+1)&255; if(!Z80._r.c) Z80._r.b=(Z80._r.b+1)&255; Z80._r.m=1; },
+    INCDE: function() { Z80._r.e=(Z80._r.e+1)&255; if(!Z80._r.e) Z80._r.d=(Z80._r.d+1)&255; Z80._r.m=1; },
+    INCHL: function() { Z80._r.l=(Z80._r.l+1)&255; if(!Z80._r.l) Z80._r.h=(Z80._r.h+1)&255; Z80._r.m=1; },
+    INCSP: function() { Z80._r.sp=(Z80._r.sp+1)&65535; Z80._r.m=1; },
+
+    DECBC: function() { Z80._r.c=(Z80._r.c-1)&255; if(Z80._r.c==255) Z80._r.b=(Z80._r.b-1)&255; Z80._r.m=1; },
+    DECDE: function() { Z80._r.e=(Z80._r.e-1)&255; if(Z80._r.e==255) Z80._r.d=(Z80._r.d-1)&255; Z80._r.m=1; },
+    DECHL: function() { Z80._r.l=(Z80._r.l-1)&255; if(Z80._r.l==255) Z80._r.h=(Z80._r.h-1)&255; Z80._r.m=1; },
+    DECSP: function() { Z80._r.sp=(Z80._r.sp-1)&65535; Z80._r.m=1; },
+
+    /*--- Bit manipulation ---*/
+    BIT0b: function() { Z80._r.f&=0x1F; Z80._r.f|=0x20; Z80._r.f=(Z80._r.b&0x01)?0:0x80; Z80._r.m=2; },
+    BIT0c: function() { Z80._r.f&=0x1F; Z80._r.f|=0x20; Z80._r.f=(Z80._r.c&0x01)?0:0x80; Z80._r.m=2; },
+    BIT0d: function() { Z80._r.f&=0x1F; Z80._r.f|=0x20; Z80._r.f=(Z80._r.d&0x01)?0:0x80; Z80._r.m=2; },
+    BIT0e: function() { Z80._r.f&=0x1F; Z80._r.f|=0x20; Z80._r.f=(Z80._r.e&0x01)?0:0x80; Z80._r.m=2; },
+    BIT0h: function() { Z80._r.f&=0x1F; Z80._r.f|=0x20; Z80._r.f=(Z80._r.h&0x01)?0:0x80; Z80._r.m=2; },
+    BIT0l: function() { Z80._r.f&=0x1F; Z80._r.f|=0x20; Z80._r.f=(Z80._r.l&0x01)?0:0x80; Z80._r.m=2; },
+    BIT0a: function() { Z80._r.f&=0x1F; Z80._r.f|=0x20; Z80._r.f=(Z80._r.a&0x01)?0:0x80; Z80._r.m=2; },
+    BIT0m: function() { Z80._r.f&=0x1F; Z80._r.f|=0x20; Z80._r.f=(MMU.rb((Z80._r.h<<8)+Z80._r.l)&0x01)?0:0x80; Z80._r.m=3; },
+
+    RES0b: function() { Z80._r.b&=0xFE; Z80._r.m=2; },
+    RES0c: function() { Z80._r.c&=0xFE; Z80._r.m=2; },
+    RES0d: function() { Z80._r.d&=0xFE; Z80._r.m=2; },
+    RES0e: function() { Z80._r.e&=0xFE; Z80._r.m=2; },
+    RES0h: function() { Z80._r.h&=0xFE; Z80._r.m=2; },
+    RES0l: function() { Z80._r.l&=0xFE; Z80._r.m=2; },
+    RES0a: function() { Z80._r.a&=0xFE; Z80._r.m=2; },
+    RES0m: function() { var i=MMU.rb((Z80._r.h<<8)+Z80._r.l); i&=0xFE; MMU.wb((Z80._r.h<<8)+Z80._r.l,i); Z80._r.m=4; },
+
+    SET0b: function() { Z80._r.b|=0x01; Z80._r.m=2; },
+    SET0c: function() { Z80._r.b|=0x01; Z80._r.m=2; },
+    SET0d: function() { Z80._r.b|=0x01; Z80._r.m=2; },
+    SET0e: function() { Z80._r.b|=0x01; Z80._r.m=2; },
+    SET0h: function() { Z80._r.b|=0x01; Z80._r.m=2; },
+    SET0l: function() { Z80._r.b|=0x01; Z80._r.m=2; },
+    SET0a: function() { Z80._r.b|=0x01; Z80._r.m=2; },
+    SET0m: function() { var i=MMU.rb((Z80._r.h<<8)+Z80._r.l); i|=0x01; MMU.wb((Z80._r.h<<8)+Z80._r.l,i); Z80._r.m=4; },
+
+    BIT1b: function() { Z80._r.f&=0x1F; Z80._r.f|=0x20; Z80._r.f=(Z80._r.b&0x02)?0:0x80; Z80._r.m=2; },
+    BIT1c: function() { Z80._r.f&=0x1F; Z80._r.f|=0x20; Z80._r.f=(Z80._r.c&0x02)?0:0x80; Z80._r.m=2; },
+    BIT1d: function() { Z80._r.f&=0x1F; Z80._r.f|=0x20; Z80._r.f=(Z80._r.d&0x02)?0:0x80; Z80._r.m=2; },
+    BIT1e: function() { Z80._r.f&=0x1F; Z80._r.f|=0x20; Z80._r.f=(Z80._r.e&0x02)?0:0x80; Z80._r.m=2; },
+    BIT1h: function() { Z80._r.f&=0x1F; Z80._r.f|=0x20; Z80._r.f=(Z80._r.h&0x02)?0:0x80; Z80._r.m=2; },
+    BIT1l: function() { Z80._r.f&=0x1F; Z80._r.f|=0x20; Z80._r.f=(Z80._r.l&0x02)?0:0x80; Z80._r.m=2; },
+    BIT1a: function() { Z80._r.f&=0x1F; Z80._r.f|=0x20; Z80._r.f=(Z80._r.a&0x02)?0:0x80; Z80._r.m=2; },
+    BIT1m: function() { Z80._r.f&=0x1F; Z80._r.f|=0x20; Z80._r.f=(MMU.rb((Z80._r.h<<8)+Z80._r.l)&0x02)?0:0x80; Z80._r.m=3; },
+
+    RES1b: function() { Z80._r.b&=0xFD; Z80._r.m=2; },
+    RES1c: function() { Z80._r.c&=0xFD; Z80._r.m=2; },
+    RES1d: function() { Z80._r.d&=0xFD; Z80._r.m=2; },
+    RES1e: function() { Z80._r.e&=0xFD; Z80._r.m=2; },
+    RES1h: function() { Z80._r.h&=0xFD; Z80._r.m=2; },
+    RES1l: function() { Z80._r.l&=0xFD; Z80._r.m=2; },
+    RES1a: function() { Z80._r.a&=0xFD; Z80._r.m=2; },
+    RES1m: function() { var i=MMU.rb((Z80._r.h<<8)+Z80._r.l); i&=0xFD; MMU.wb((Z80._r.h<<8)+Z80._r.l,i); Z80._r.m=4; },
+
+    SET1b: function() { Z80._r.b|=0x02; Z80._r.m=2; },
+    SET1c: function() { Z80._r.b|=0x02; Z80._r.m=2; },
+    SET1d: function() { Z80._r.b|=0x02; Z80._r.m=2; },
+    SET1e: function() { Z80._r.b|=0x02; Z80._r.m=2; },
+    SET1h: function() { Z80._r.b|=0x02; Z80._r.m=2; },
+    SET1l: function() { Z80._r.b|=0x02; Z80._r.m=2; },
+    SET1a: function() { Z80._r.b|=0x02; Z80._r.m=2; },
+    SET1m: function() { var i=MMU.rb((Z80._r.h<<8)+Z80._r.l); i|=0x02; MMU.wb((Z80._r.h<<8)+Z80._r.l,i); Z80._r.m=4; },
+
+    BIT2b: function() { Z80._r.f&=0x1F; Z80._r.f|=0x20; Z80._r.f=(Z80._r.b&0x04)?0:0x80; Z80._r.m=2; },
+    BIT2c: function() { Z80._r.f&=0x1F; Z80._r.f|=0x20; Z80._r.f=(Z80._r.c&0x04)?0:0x80; Z80._r.m=2; },
+    BIT2d: function() { Z80._r.f&=0x1F; Z80._r.f|=0x20; Z80._r.f=(Z80._r.d&0x04)?0:0x80; Z80._r.m=2; },
+    BIT2e: function() { Z80._r.f&=0x1F; Z80._r.f|=0x20; Z80._r.f=(Z80._r.e&0x04)?0:0x80; Z80._r.m=2; },
+    BIT2h: function() { Z80._r.f&=0x1F; Z80._r.f|=0x20; Z80._r.f=(Z80._r.h&0x04)?0:0x80; Z80._r.m=2; },
+    BIT2l: function() { Z80._r.f&=0x1F; Z80._r.f|=0x20; Z80._r.f=(Z80._r.l&0x04)?0:0x80; Z80._r.m=2; },
+    BIT2a: function() { Z80._r.f&=0x1F; Z80._r.f|=0x20; Z80._r.f=(Z80._r.a&0x04)?0:0x80; Z80._r.m=2; },
+    BIT2m: function() { Z80._r.f&=0x1F; Z80._r.f|=0x20; Z80._r.f=(MMU.rb((Z80._r.h<<8)+Z80._r.l)&0x04)?0:0x80; Z80._r.m=3; },
+
+    RES2b: function() { Z80._r.b&=0xFB; Z80._r.m=2; },
+    RES2c: function() { Z80._r.c&=0xFB; Z80._r.m=2; },
+    RES2d: function() { Z80._r.d&=0xFB; Z80._r.m=2; },
+    RES2e: function() { Z80._r.e&=0xFB; Z80._r.m=2; },
+    RES2h: function() { Z80._r.h&=0xFB; Z80._r.m=2; },
+    RES2l: function() { Z80._r.l&=0xFB; Z80._r.m=2; },
+    RES2a: function() { Z80._r.a&=0xFB; Z80._r.m=2; },
+    RES2m: function() { var i=MMU.rb((Z80._r.h<<8)+Z80._r.l); i&=0xFB; MMU.wb((Z80._r.h<<8)+Z80._r.l,i); Z80._r.m=4; },
+
+    SET2b: function() { Z80._r.b|=0x04; Z80._r.m=2; },
+    SET2c: function() { Z80._r.b|=0x04; Z80._r.m=2; },
+    SET2d: function() { Z80._r.b|=0x04; Z80._r.m=2; },
+    SET2e: function() { Z80._r.b|=0x04; Z80._r.m=2; },
+    SET2h: function() { Z80._r.b|=0x04; Z80._r.m=2; },
+    SET2l: function() { Z80._r.b|=0x04; Z80._r.m=2; },
+    SET2a: function() { Z80._r.b|=0x04; Z80._r.m=2; },
+    SET2m: function() { var i=MMU.rb((Z80._r.h<<8)+Z80._r.l); i|=0x04; MMU.wb((Z80._r.h<<8)+Z80._r.l,i); Z80._r.m=4; },
+
+    BIT3b: function() { Z80._r.f&=0x1F; Z80._r.f|=0x20; Z80._r.f=(Z80._r.b&0x08)?0:0x80; Z80._r.m=2; },
+    BIT3c: function() { Z80._r.f&=0x1F; Z80._r.f|=0x20; Z80._r.f=(Z80._r.c&0x08)?0:0x80; Z80._r.m=2; },
+    BIT3d: function() { Z80._r.f&=0x1F; Z80._r.f|=0x20; Z80._r.f=(Z80._r.d&0x08)?0:0x80; Z80._r.m=2; },
+    BIT3e: function() { Z80._r.f&=0x1F; Z80._r.f|=0x20; Z80._r.f=(Z80._r.e&0x08)?0:0x80; Z80._r.m=2; },
+    BIT3h: function() { Z80._r.f&=0x1F; Z80._r.f|=0x20; Z80._r.f=(Z80._r.h&0x08)?0:0x80; Z80._r.m=2; },
+    BIT3l: function() { Z80._r.f&=0x1F; Z80._r.f|=0x20; Z80._r.f=(Z80._r.l&0x08)?0:0x80; Z80._r.m=2; },
+    BIT3a: function() { Z80._r.f&=0x1F; Z80._r.f|=0x20; Z80._r.f=(Z80._r.a&0x08)?0:0x80; Z80._r.m=2; },
+    BIT3m: function() { Z80._r.f&=0x1F; Z80._r.f|=0x20; Z80._r.f=(MMU.rb((Z80._r.h<<8)+Z80._r.l)&0x08)?0:0x80; Z80._r.m=3; },
+
+    RES3b: function() { Z80._r.b&=0xF7; Z80._r.m=2; },
+    RES3c: function() { Z80._r.c&=0xF7; Z80._r.m=2; },
+    RES3d: function() { Z80._r.d&=0xF7; Z80._r.m=2; },
+    RES3e: function() { Z80._r.e&=0xF7; Z80._r.m=2; },
+    RES3h: function() { Z80._r.h&=0xF7; Z80._r.m=2; },
+    RES3l: function() { Z80._r.l&=0xF7; Z80._r.m=2; },
+    RES3a: function() { Z80._r.a&=0xF7; Z80._r.m=2; },
+    RES3m: function() { var i=MMU.rb((Z80._r.h<<8)+Z80._r.l); i&=0xF7; MMU.wb((Z80._r.h<<8)+Z80._r.l,i); Z80._r.m=4; },
+
+    SET3b: function() { Z80._r.b|=0x08; Z80._r.m=2; },
+    SET3c: function() { Z80._r.b|=0x08; Z80._r.m=2; },
+    SET3d: function() { Z80._r.b|=0x08; Z80._r.m=2; },
+    SET3e: function() { Z80._r.b|=0x08; Z80._r.m=2; },
+    SET3h: function() { Z80._r.b|=0x08; Z80._r.m=2; },
+    SET3l: function() { Z80._r.b|=0x08; Z80._r.m=2; },
+    SET3a: function() { Z80._r.b|=0x08; Z80._r.m=2; },
+    SET3m: function() { var i=MMU.rb((Z80._r.h<<8)+Z80._r.l); i|=0x08; MMU.wb((Z80._r.h<<8)+Z80._r.l,i); Z80._r.m=4; },
+
+    BIT4b: function() { Z80._r.f&=0x1F; Z80._r.f|=0x20; Z80._r.f=(Z80._r.b&0x10)?0:0x80; Z80._r.m=2; },
+    BIT4c: function() { Z80._r.f&=0x1F; Z80._r.f|=0x20; Z80._r.f=(Z80._r.c&0x10)?0:0x80; Z80._r.m=2; },
+    BIT4d: function() { Z80._r.f&=0x1F; Z80._r.f|=0x20; Z80._r.f=(Z80._r.d&0x10)?0:0x80; Z80._r.m=2; },
+    BIT4e: function() { Z80._r.f&=0x1F; Z80._r.f|=0x20; Z80._r.f=(Z80._r.e&0x10)?0:0x80; Z80._r.m=2; },
+    BIT4h: function() { Z80._r.f&=0x1F; Z80._r.f|=0x20; Z80._r.f=(Z80._r.h&0x10)?0:0x80; Z80._r.m=2; },
+    BIT4l: function() { Z80._r.f&=0x1F; Z80._r.f|=0x20; Z80._r.f=(Z80._r.l&0x10)?0:0x80; Z80._r.m=2; },
+    BIT4a: function() { Z80._r.f&=0x1F; Z80._r.f|=0x20; Z80._r.f=(Z80._r.a&0x10)?0:0x80; Z80._r.m=2; },
+    BIT4m: function() { Z80._r.f&=0x1F; Z80._r.f|=0x20; Z80._r.f=(MMU.rb((Z80._r.h<<8)+Z80._r.l)&0x10)?0:0x80; Z80._r.m=3; },
+
+    RES4b: function() { Z80._r.b&=0xEF; Z80._r.m=2; },
+    RES4c: function() { Z80._r.c&=0xEF; Z80._r.m=2; },
+    RES4d: function() { Z80._r.d&=0xEF; Z80._r.m=2; },
+    RES4e: function() { Z80._r.e&=0xEF; Z80._r.m=2; },
+    RES4h: function() { Z80._r.h&=0xEF; Z80._r.m=2; },
+    RES4l: function() { Z80._r.l&=0xEF; Z80._r.m=2; },
+    RES4a: function() { Z80._r.a&=0xEF; Z80._r.m=2; },
+    RES4m: function() { var i=MMU.rb((Z80._r.h<<8)+Z80._r.l); i&=0xEF; MMU.wb((Z80._r.h<<8)+Z80._r.l,i); Z80._r.m=4; },
+
+    SET4b: function() { Z80._r.b|=0x10; Z80._r.m=2; },
+    SET4c: function() { Z80._r.b|=0x10; Z80._r.m=2; },
+    SET4d: function() { Z80._r.b|=0x10; Z80._r.m=2; },
+    SET4e: function() { Z80._r.b|=0x10; Z80._r.m=2; },
+    SET4h: function() { Z80._r.b|=0x10; Z80._r.m=2; },
+    SET4l: function() { Z80._r.b|=0x10; Z80._r.m=2; },
+    SET4a: function() { Z80._r.b|=0x10; Z80._r.m=2; },
+    SET4m: function() { var i=MMU.rb((Z80._r.h<<8)+Z80._r.l); i|=0x10; MMU.wb((Z80._r.h<<8)+Z80._r.l,i); Z80._r.m=4; },
+
+    BIT5b: function() { Z80._r.f&=0x1F; Z80._r.f|=0x20; Z80._r.f=(Z80._r.b&0x20)?0:0x80; Z80._r.m=2; },
+    BIT5c: function() { Z80._r.f&=0x1F; Z80._r.f|=0x20; Z80._r.f=(Z80._r.c&0x20)?0:0x80; Z80._r.m=2; },
+    BIT5d: function() { Z80._r.f&=0x1F; Z80._r.f|=0x20; Z80._r.f=(Z80._r.d&0x20)?0:0x80; Z80._r.m=2; },
+    BIT5e: function() { Z80._r.f&=0x1F; Z80._r.f|=0x20; Z80._r.f=(Z80._r.e&0x20)?0:0x80; Z80._r.m=2; },
+    BIT5h: function() { Z80._r.f&=0x1F; Z80._r.f|=0x20; Z80._r.f=(Z80._r.h&0x20)?0:0x80; Z80._r.m=2; },
+    BIT5l: function() { Z80._r.f&=0x1F; Z80._r.f|=0x20; Z80._r.f=(Z80._r.l&0x20)?0:0x80; Z80._r.m=2; },
+    BIT5a: function() { Z80._r.f&=0x1F; Z80._r.f|=0x20; Z80._r.f=(Z80._r.a&0x20)?0:0x80; Z80._r.m=2; },
+    BIT5m: function() { Z80._r.f&=0x1F; Z80._r.f|=0x20; Z80._r.f=(MMU.rb((Z80._r.h<<8)+Z80._r.l)&0x20)?0:0x80; Z80._r.m=3; },
+
+    RES5b: function() { Z80._r.b&=0xDF; Z80._r.m=2; },
+    RES5c: function() { Z80._r.c&=0xDF; Z80._r.m=2; },
+    RES5d: function() { Z80._r.d&=0xDF; Z80._r.m=2; },
+    RES5e: function() { Z80._r.e&=0xDF; Z80._r.m=2; },
+    RES5h: function() { Z80._r.h&=0xDF; Z80._r.m=2; },
+    RES5l: function() { Z80._r.l&=0xDF; Z80._r.m=2; },
+    RES5a: function() { Z80._r.a&=0xDF; Z80._r.m=2; },
+    RES5m: function() { var i=MMU.rb((Z80._r.h<<8)+Z80._r.l); i&=0xDF; MMU.wb((Z80._r.h<<8)+Z80._r.l,i); Z80._r.m=4; },
+
+    SET5b: function() { Z80._r.b|=0x20; Z80._r.m=2; },
+    SET5c: function() { Z80._r.b|=0x20; Z80._r.m=2; },
+    SET5d: function() { Z80._r.b|=0x20; Z80._r.m=2; },
+    SET5e: function() { Z80._r.b|=0x20; Z80._r.m=2; },
+    SET5h: function() { Z80._r.b|=0x20; Z80._r.m=2; },
+    SET5l: function() { Z80._r.b|=0x20; Z80._r.m=2; },
+    SET5a: function() { Z80._r.b|=0x20; Z80._r.m=2; },
+    SET5m: function() { var i=MMU.rb((Z80._r.h<<8)+Z80._r.l); i|=0x20; MMU.wb((Z80._r.h<<8)+Z80._r.l,i); Z80._r.m=4; },
+
+    BIT6b: function() { Z80._r.f&=0x1F; Z80._r.f|=0x20; Z80._r.f=(Z80._r.b&0x40)?0:0x80; Z80._r.m=2; },
+    BIT6c: function() { Z80._r.f&=0x1F; Z80._r.f|=0x20; Z80._r.f=(Z80._r.c&0x40)?0:0x80; Z80._r.m=2; },
+    BIT6d: function() { Z80._r.f&=0x1F; Z80._r.f|=0x20; Z80._r.f=(Z80._r.d&0x40)?0:0x80; Z80._r.m=2; },
+    BIT6e: function() { Z80._r.f&=0x1F; Z80._r.f|=0x20; Z80._r.f=(Z80._r.e&0x40)?0:0x80; Z80._r.m=2; },
+    BIT6h: function() { Z80._r.f&=0x1F; Z80._r.f|=0x20; Z80._r.f=(Z80._r.h&0x40)?0:0x80; Z80._r.m=2; },
+    BIT6l: function() { Z80._r.f&=0x1F; Z80._r.f|=0x20; Z80._r.f=(Z80._r.l&0x40)?0:0x80; Z80._r.m=2; },
+    BIT6a: function() { Z80._r.f&=0x1F; Z80._r.f|=0x20; Z80._r.f=(Z80._r.a&0x40)?0:0x80; Z80._r.m=2; },
+    BIT6m: function() { Z80._r.f&=0x1F; Z80._r.f|=0x20; Z80._r.f=(MMU.rb((Z80._r.h<<8)+Z80._r.l)&0x40)?0:0x80; Z80._r.m=3; },
+
+    RES6b: function() { Z80._r.b&=0xBF; Z80._r.m=2; },
+    RES6c: function() { Z80._r.c&=0xBF; Z80._r.m=2; },
+    RES6d: function() { Z80._r.d&=0xBF; Z80._r.m=2; },
+    RES6e: function() { Z80._r.e&=0xBF; Z80._r.m=2; },
+    RES6h: function() { Z80._r.h&=0xBF; Z80._r.m=2; },
+    RES6l: function() { Z80._r.l&=0xBF; Z80._r.m=2; },
+    RES6a: function() { Z80._r.a&=0xBF; Z80._r.m=2; },
+    RES6m: function() { var i=MMU.rb((Z80._r.h<<8)+Z80._r.l); i&=0xBF; MMU.wb((Z80._r.h<<8)+Z80._r.l,i); Z80._r.m=4; },
+
+    SET6b: function() { Z80._r.b|=0x40; Z80._r.m=2; },
+    SET6c: function() { Z80._r.b|=0x40; Z80._r.m=2; },
+    SET6d: function() { Z80._r.b|=0x40; Z80._r.m=2; },
+    SET6e: function() { Z80._r.b|=0x40; Z80._r.m=2; },
+    SET6h: function() { Z80._r.b|=0x40; Z80._r.m=2; },
+    SET6l: function() { Z80._r.b|=0x40; Z80._r.m=2; },
+    SET6a: function() { Z80._r.b|=0x40; Z80._r.m=2; },
+    SET6m: function() { var i=MMU.rb((Z80._r.h<<8)+Z80._r.l); i|=0x40; MMU.wb((Z80._r.h<<8)+Z80._r.l,i); Z80._r.m=4; },
+
+    BIT7b: function() { Z80._r.f&=0x1F; Z80._r.f|=0x20; Z80._r.f=(Z80._r.b&0x80)?0:0x80; Z80._r.m=2; },
+    BIT7c: function() { Z80._r.f&=0x1F; Z80._r.f|=0x20; Z80._r.f=(Z80._r.c&0x80)?0:0x80; Z80._r.m=2; },
+    BIT7d: function() { Z80._r.f&=0x1F; Z80._r.f|=0x20; Z80._r.f=(Z80._r.d&0x80)?0:0x80; Z80._r.m=2; },
+    BIT7e: function() { Z80._r.f&=0x1F; Z80._r.f|=0x20; Z80._r.f=(Z80._r.e&0x80)?0:0x80; Z80._r.m=2; },
+    BIT7h: function() { Z80._r.f&=0x1F; Z80._r.f|=0x20; Z80._r.f=(Z80._r.h&0x80)?0:0x80; Z80._r.m=2; },
+    BIT7l: function() { Z80._r.f&=0x1F; Z80._r.f|=0x20; Z80._r.f=(Z80._r.l&0x80)?0:0x80; Z80._r.m=2; },
+    BIT7a: function() { Z80._r.f&=0x1F; Z80._r.f|=0x20; Z80._r.f=(Z80._r.a&0x80)?0:0x80; Z80._r.m=2; },
+    BIT7m: function() { Z80._r.f&=0x1F; Z80._r.f|=0x20; Z80._r.f=(MMU.rb((Z80._r.h<<8)+Z80._r.l)&0x80)?0:0x80; Z80._r.m=3; },
+
+    RES7b: function() { Z80._r.b&=0x7F; Z80._r.m=2; },
+    RES7c: function() { Z80._r.c&=0x7F; Z80._r.m=2; },
+    RES7d: function() { Z80._r.d&=0x7F; Z80._r.m=2; },
+    RES7e: function() { Z80._r.e&=0x7F; Z80._r.m=2; },
+    RES7h: function() { Z80._r.h&=0x7F; Z80._r.m=2; },
+    RES7l: function() { Z80._r.l&=0x7F; Z80._r.m=2; },
+    RES7a: function() { Z80._r.a&=0x7F; Z80._r.m=2; },
+    RES7m: function() { var i=MMU.rb((Z80._r.h<<8)+Z80._r.l); i&=0x7F; MMU.wb((Z80._r.h<<8)+Z80._r.l,i); Z80._r.m=4; },
+
+    SET7b: function() { Z80._r.b|=0x80; Z80._r.m=2; },
+    SET7c: function() { Z80._r.b|=0x80; Z80._r.m=2; },
+    SET7d: function() { Z80._r.b|=0x80; Z80._r.m=2; },
+    SET7e: function() { Z80._r.b|=0x80; Z80._r.m=2; },
+    SET7h: function() { Z80._r.b|=0x80; Z80._r.m=2; },
+    SET7l: function() { Z80._r.b|=0x80; Z80._r.m=2; },
+    SET7a: function() { Z80._r.b|=0x80; Z80._r.m=2; },
+    SET7m: function() { var i=MMU.rb((Z80._r.h<<8)+Z80._r.l); i|=0x80; MMU.wb((Z80._r.h<<8)+Z80._r.l,i); Z80._r.m=4; },
+
+    RLA: function() { var ci=Z80._r.f&0x10?1:0; var co=Z80._r.a&0x80?0x10:0; Z80._r.a=(Z80._r.a<<1)+ci; Z80._r.a&=255; Z80._r.f=(Z80._r.f&0xEF)+co; Z80._r.m=1; },
+    RLCA: function() { var ci=Z80._r.a&0x80?1:0; var co=Z80._r.a&0x80?0x10:0; Z80._r.a=(Z80._r.a<<1)+ci; Z80._r.a&=255; Z80._r.f=(Z80._r.f&0xEF)+co; Z80._r.m=1; },
+    RRA: function() { var ci=Z80._r.f&0x10?0x80:0; var co=Z80._r.a&1?0x10:0; Z80._r.a=(Z80._r.a>>1)+ci; Z80._r.a&=255; Z80._r.f=(Z80._r.f&0xEF)+co; Z80._r.m=1; },
+    RRCA: function() { var ci=Z80._r.a&1?0x80:0; var co=Z80._r.a&1?0x10:0; Z80._r.a=(Z80._r.a>>1)+ci; Z80._r.a&=255; Z80._r.f=(Z80._r.f&0xEF)+co; Z80._r.m=1; },
+
+    RLr_b: function() { var ci=Z80._r.f&0x10?1:0; var co=Z80._r.b&0x80?0x10:0; Z80._r.b=(Z80._r.b<<1)+ci; Z80._r.b&=255; Z80._r.f=(Z80._r.b)?0:0x80; Z80._r.f=(Z80._r.f&0xEF)+co; Z80._r.m=2; },
+    RLr_c: function() { var ci=Z80._r.f&0x10?1:0; var co=Z80._r.c&0x80?0x10:0; Z80._r.c=(Z80._r.c<<1)+ci; Z80._r.c&=255; Z80._r.f=(Z80._r.c)?0:0x80; Z80._r.f=(Z80._r.f&0xEF)+co; Z80._r.m=2; },
+    RLr_d: function() { var ci=Z80._r.f&0x10?1:0; var co=Z80._r.d&0x80?0x10:0; Z80._r.d=(Z80._r.d<<1)+ci; Z80._r.d&=255; Z80._r.f=(Z80._r.d)?0:0x80; Z80._r.f=(Z80._r.f&0xEF)+co; Z80._r.m=2; },
+    RLr_e: function() { var ci=Z80._r.f&0x10?1:0; var co=Z80._r.e&0x80?0x10:0; Z80._r.e=(Z80._r.e<<1)+ci; Z80._r.e&=255; Z80._r.f=(Z80._r.e)?0:0x80; Z80._r.f=(Z80._r.f&0xEF)+co; Z80._r.m=2; },
+    RLr_h: function() { var ci=Z80._r.f&0x10?1:0; var co=Z80._r.h&0x80?0x10:0; Z80._r.h=(Z80._r.h<<1)+ci; Z80._r.h&=255; Z80._r.f=(Z80._r.h)?0:0x80; Z80._r.f=(Z80._r.f&0xEF)+co; Z80._r.m=2; },
+    RLr_l: function() { var ci=Z80._r.f&0x10?1:0; var co=Z80._r.l&0x80?0x10:0; Z80._r.l=(Z80._r.l<<1)+ci; Z80._r.l&=255; Z80._r.f=(Z80._r.l)?0:0x80; Z80._r.f=(Z80._r.f&0xEF)+co; Z80._r.m=2; },
+    RLr_a: function() { var ci=Z80._r.f&0x10?1:0; var co=Z80._r.a&0x80?0x10:0; Z80._r.a=(Z80._r.a<<1)+ci; Z80._r.a&=255; Z80._r.f=(Z80._r.a)?0:0x80; Z80._r.f=(Z80._r.f&0xEF)+co; Z80._r.m=2; },
+    RLHL: function() { var i=MMU.rb((Z80._r.h<<8)+Z80._r.l); var ci=Z80._r.f&0x10?1:0; var co=i&0x80?0x10:0; i=(i<<1)+ci; i&=255; Z80._r.f=(i)?0:0x80; MMU.wb((Z80._r.h<<8)+Z80._r.l,i); Z80._r.f=(Z80._r.f&0xEF)+co; Z80._r.m=4; },
+
+    RLCr_b: function() { var ci=Z80._r.b&0x80?1:0; var co=Z80._r.b&0x80?0x10:0; Z80._r.b=(Z80._r.b<<1)+ci; Z80._r.b&=255; Z80._r.f=(Z80._r.b)?0:0x80; Z80._r.f=(Z80._r.f&0xEF)+co; Z80._r.m=2; },
+    RLCr_c: function() { var ci=Z80._r.c&0x80?1:0; var co=Z80._r.c&0x80?0x10:0; Z80._r.c=(Z80._r.c<<1)+ci; Z80._r.c&=255; Z80._r.f=(Z80._r.c)?0:0x80; Z80._r.f=(Z80._r.f&0xEF)+co; Z80._r.m=2; },
+    RLCr_d: function() { var ci=Z80._r.d&0x80?1:0; var co=Z80._r.d&0x80?0x10:0; Z80._r.d=(Z80._r.d<<1)+ci; Z80._r.d&=255; Z80._r.f=(Z80._r.d)?0:0x80; Z80._r.f=(Z80._r.f&0xEF)+co; Z80._r.m=2; },
+    RLCr_e: function() { var ci=Z80._r.e&0x80?1:0; var co=Z80._r.e&0x80?0x10:0; Z80._r.e=(Z80._r.e<<1)+ci; Z80._r.e&=255; Z80._r.f=(Z80._r.e)?0:0x80; Z80._r.f=(Z80._r.f&0xEF)+co; Z80._r.m=2; },
+    RLCr_h: function() { var ci=Z80._r.h&0x80?1:0; var co=Z80._r.h&0x80?0x10:0; Z80._r.h=(Z80._r.h<<1)+ci; Z80._r.h&=255; Z80._r.f=(Z80._r.h)?0:0x80; Z80._r.f=(Z80._r.f&0xEF)+co; Z80._r.m=2; },
+    RLCr_l: function() { var ci=Z80._r.l&0x80?1:0; var co=Z80._r.l&0x80?0x10:0; Z80._r.l=(Z80._r.l<<1)+ci; Z80._r.l&=255; Z80._r.f=(Z80._r.l)?0:0x80; Z80._r.f=(Z80._r.f&0xEF)+co; Z80._r.m=2; },
+    RLCr_a: function() { var ci=Z80._r.a&0x80?1:0; var co=Z80._r.a&0x80?0x10:0; Z80._r.a=(Z80._r.a<<1)+ci; Z80._r.a&=255; Z80._r.f=(Z80._r.a)?0:0x80; Z80._r.f=(Z80._r.f&0xEF)+co; Z80._r.m=2; },
+    RLCHL: function() { var i=MMU.rb((Z80._r.h<<8)+Z80._r.l); var ci=i&0x80?1:0; var co=i&0x80?0x10:0; i=(i<<1)+ci; i&=255; Z80._r.f=(i)?0:0x80; MMU.wb((Z80._r.h<<8)+Z80._r.l,i); Z80._r.f=(Z80._r.f&0xEF)+co; Z80._r.m=4; },
+
+    RRr_b: function() { var ci=Z80._r.f&0x10?0x80:0; var co=Z80._r.b&1?0x10:0; Z80._r.b=(Z80._r.b>>1)+ci; Z80._r.b&=255; Z80._r.f=(Z80._r.b)?0:0x80; Z80._r.f=(Z80._r.f&0xEF)+co; Z80._r.m=2; },
+    RRr_c: function() { var ci=Z80._r.f&0x10?0x80:0; var co=Z80._r.c&1?0x10:0; Z80._r.c=(Z80._r.c>>1)+ci; Z80._r.c&=255; Z80._r.f=(Z80._r.c)?0:0x80; Z80._r.f=(Z80._r.f&0xEF)+co; Z80._r.m=2; },
+    RRr_d: function() { var ci=Z80._r.f&0x10?0x80:0; var co=Z80._r.d&1?0x10:0; Z80._r.d=(Z80._r.d>>1)+ci; Z80._r.d&=255; Z80._r.f=(Z80._r.d)?0:0x80; Z80._r.f=(Z80._r.f&0xEF)+co; Z80._r.m=2; },
+    RRr_e: function() { var ci=Z80._r.f&0x10?0x80:0; var co=Z80._r.e&1?0x10:0; Z80._r.e=(Z80._r.e>>1)+ci; Z80._r.e&=255; Z80._r.f=(Z80._r.e)?0:0x80; Z80._r.f=(Z80._r.f&0xEF)+co; Z80._r.m=2; },
+    RRr_h: function() { var ci=Z80._r.f&0x10?0x80:0; var co=Z80._r.h&1?0x10:0; Z80._r.h=(Z80._r.h>>1)+ci; Z80._r.h&=255; Z80._r.f=(Z80._r.h)?0:0x80; Z80._r.f=(Z80._r.f&0xEF)+co; Z80._r.m=2; },
+    RRr_l: function() { var ci=Z80._r.f&0x10?0x80:0; var co=Z80._r.l&1?0x10:0; Z80._r.l=(Z80._r.l>>1)+ci; Z80._r.l&=255; Z80._r.f=(Z80._r.l)?0:0x80; Z80._r.f=(Z80._r.f&0xEF)+co; Z80._r.m=2; },
+    RRr_a: function() { var ci=Z80._r.f&0x10?0x80:0; var co=Z80._r.a&1?0x10:0; Z80._r.a=(Z80._r.a>>1)+ci; Z80._r.a&=255; Z80._r.f=(Z80._r.a)?0:0x80; Z80._r.f=(Z80._r.f&0xEF)+co; Z80._r.m=2; },
+    RRHL: function() { var i=MMU.rb((Z80._r.h<<8)+Z80._r.l); var ci=Z80._r.f&0x10?0x80:0; var co=i&1?0x10:0; i=(i>>1)+ci; i&=255; MMU.wb((Z80._r.h<<8)+Z80._r.l,i); Z80._r.f=(i)?0:0x80; Z80._r.f=(Z80._r.f&0xEF)+co; Z80._r.m=4; },
+
+    RRCr_b: function() { var ci=Z80._r.b&1?0x80:0; var co=Z80._r.b&1?0x10:0; Z80._r.b=(Z80._r.b>>1)+ci; Z80._r.b&=255; Z80._r.f=(Z80._r.b)?0:0x80; Z80._r.f=(Z80._r.f&0xEF)+co; Z80._r.m=2; },
+    RRCr_c: function() { var ci=Z80._r.c&1?0x80:0; var co=Z80._r.c&1?0x10:0; Z80._r.c=(Z80._r.c>>1)+ci; Z80._r.c&=255; Z80._r.f=(Z80._r.c)?0:0x80; Z80._r.f=(Z80._r.f&0xEF)+co; Z80._r.m=2; },
+    RRCr_d: function() { var ci=Z80._r.d&1?0x80:0; var co=Z80._r.d&1?0x10:0; Z80._r.d=(Z80._r.d>>1)+ci; Z80._r.d&=255; Z80._r.f=(Z80._r.d)?0:0x80; Z80._r.f=(Z80._r.f&0xEF)+co; Z80._r.m=2; },
+    RRCr_e: function() { var ci=Z80._r.e&1?0x80:0; var co=Z80._r.e&1?0x10:0; Z80._r.e=(Z80._r.e>>1)+ci; Z80._r.e&=255; Z80._r.f=(Z80._r.e)?0:0x80; Z80._r.f=(Z80._r.f&0xEF)+co; Z80._r.m=2; },
+    RRCr_h: function() { var ci=Z80._r.h&1?0x80:0; var co=Z80._r.h&1?0x10:0; Z80._r.h=(Z80._r.h>>1)+ci; Z80._r.h&=255; Z80._r.f=(Z80._r.h)?0:0x80; Z80._r.f=(Z80._r.f&0xEF)+co; Z80._r.m=2; },
+    RRCr_l: function() { var ci=Z80._r.l&1?0x80:0; var co=Z80._r.l&1?0x10:0; Z80._r.l=(Z80._r.l>>1)+ci; Z80._r.l&=255; Z80._r.f=(Z80._r.l)?0:0x80; Z80._r.f=(Z80._r.f&0xEF)+co; Z80._r.m=2; },
+    RRCr_a: function() { var ci=Z80._r.a&1?0x80:0; var co=Z80._r.a&1?0x10:0; Z80._r.a=(Z80._r.a>>1)+ci; Z80._r.a&=255; Z80._r.f=(Z80._r.a)?0:0x80; Z80._r.f=(Z80._r.f&0xEF)+co; Z80._r.m=2; },
+    RRCHL: function() { var i=MMU.rb((Z80._r.h<<8)+Z80._r.l); var ci=i&1?0x80:0; var co=i&1?0x10:0; i=(i>>1)+ci; i&=255; MMU.wb((Z80._r.h<<8)+Z80._r.l,i); Z80._r.f=(i)?0:0x80; Z80._r.f=(Z80._r.f&0xEF)+co; Z80._r.m=4; },
+
+    SLAr_b: function() { var co=Z80._r.b&0x80?0x10:0; Z80._r.b=(Z80._r.b<<1)&255; Z80._r.f=(Z80._r.b)?0:0x80; Z80._r.f=(Z80._r.f&0xEF)+co; Z80._r.m=2; },
+    SLAr_c: function() { var co=Z80._r.c&0x80?0x10:0; Z80._r.c=(Z80._r.c<<1)&255; Z80._r.f=(Z80._r.c)?0:0x80; Z80._r.f=(Z80._r.f&0xEF)+co; Z80._r.m=2; },
+    SLAr_d: function() { var co=Z80._r.d&0x80?0x10:0; Z80._r.d=(Z80._r.d<<1)&255; Z80._r.f=(Z80._r.d)?0:0x80; Z80._r.f=(Z80._r.f&0xEF)+co; Z80._r.m=2; },
+    SLAr_e: function() { var co=Z80._r.e&0x80?0x10:0; Z80._r.e=(Z80._r.e<<1)&255; Z80._r.f=(Z80._r.e)?0:0x80; Z80._r.f=(Z80._r.f&0xEF)+co; Z80._r.m=2; },
+    SLAr_h: function() { var co=Z80._r.h&0x80?0x10:0; Z80._r.h=(Z80._r.h<<1)&255; Z80._r.f=(Z80._r.h)?0:0x80; Z80._r.f=(Z80._r.f&0xEF)+co; Z80._r.m=2; },
+    SLAr_l: function() { var co=Z80._r.l&0x80?0x10:0; Z80._r.l=(Z80._r.l<<1)&255; Z80._r.f=(Z80._r.l)?0:0x80; Z80._r.f=(Z80._r.f&0xEF)+co; Z80._r.m=2; },
+    SLAr_a: function() { var co=Z80._r.a&0x80?0x10:0; Z80._r.a=(Z80._r.a<<1)&255; Z80._r.f=(Z80._r.a)?0:0x80; Z80._r.f=(Z80._r.f&0xEF)+co; Z80._r.m=2; },
+
+    SLLr_b: function() { var co=Z80._r.b&0x80?0x10:0; Z80._r.b=(Z80._r.b<<1)&255+1; Z80._r.f=(Z80._r.b)?0:0x80; Z80._r.f=(Z80._r.f&0xEF)+co; Z80._r.m=2; },
+    SLLr_c: function() { var co=Z80._r.c&0x80?0x10:0; Z80._r.c=(Z80._r.c<<1)&255+1; Z80._r.f=(Z80._r.c)?0:0x80; Z80._r.f=(Z80._r.f&0xEF)+co; Z80._r.m=2; },
+    SLLr_d: function() { var co=Z80._r.d&0x80?0x10:0; Z80._r.d=(Z80._r.d<<1)&255+1; Z80._r.f=(Z80._r.d)?0:0x80; Z80._r.f=(Z80._r.f&0xEF)+co; Z80._r.m=2; },
+    SLLr_e: function() { var co=Z80._r.e&0x80?0x10:0; Z80._r.e=(Z80._r.e<<1)&255+1; Z80._r.f=(Z80._r.e)?0:0x80; Z80._r.f=(Z80._r.f&0xEF)+co; Z80._r.m=2; },
+    SLLr_h: function() { var co=Z80._r.h&0x80?0x10:0; Z80._r.h=(Z80._r.h<<1)&255+1; Z80._r.f=(Z80._r.h)?0:0x80; Z80._r.f=(Z80._r.f&0xEF)+co; Z80._r.m=2; },
+    SLLr_l: function() { var co=Z80._r.l&0x80?0x10:0; Z80._r.l=(Z80._r.l<<1)&255+1; Z80._r.f=(Z80._r.l)?0:0x80; Z80._r.f=(Z80._r.f&0xEF)+co; Z80._r.m=2; },
+    SLLr_a: function() { var co=Z80._r.a&0x80?0x10:0; Z80._r.a=(Z80._r.a<<1)&255+1; Z80._r.f=(Z80._r.a)?0:0x80; Z80._r.f=(Z80._r.f&0xEF)+co; Z80._r.m=2; },
+
+    SRAr_b: function() { var ci=Z80._r.b&0x80; var co=Z80._r.b&1?0x10:0; Z80._r.b=((Z80._r.b>>1)+ci)&255; Z80._r.f=(Z80._r.b)?0:0x80; Z80._r.f=(Z80._r.f&0xEF)+co; Z80._r.m=2; },
+    SRAr_c: function() { var ci=Z80._r.c&0x80; var co=Z80._r.c&1?0x10:0; Z80._r.c=((Z80._r.c>>1)+ci)&255; Z80._r.f=(Z80._r.c)?0:0x80; Z80._r.f=(Z80._r.f&0xEF)+co; Z80._r.m=2; },
+    SRAr_d: function() { var ci=Z80._r.d&0x80; var co=Z80._r.d&1?0x10:0; Z80._r.d=((Z80._r.d>>1)+ci)&255; Z80._r.f=(Z80._r.d)?0:0x80; Z80._r.f=(Z80._r.f&0xEF)+co; Z80._r.m=2; },
+    SRAr_e: function() { var ci=Z80._r.e&0x80; var co=Z80._r.e&1?0x10:0; Z80._r.e=((Z80._r.e>>1)+ci)&255; Z80._r.f=(Z80._r.e)?0:0x80; Z80._r.f=(Z80._r.f&0xEF)+co; Z80._r.m=2; },
+    SRAr_h: function() { var ci=Z80._r.h&0x80; var co=Z80._r.h&1?0x10:0; Z80._r.h=((Z80._r.h>>1)+ci)&255; Z80._r.f=(Z80._r.h)?0:0x80; Z80._r.f=(Z80._r.f&0xEF)+co; Z80._r.m=2; },
+    SRAr_l: function() { var ci=Z80._r.l&0x80; var co=Z80._r.l&1?0x10:0; Z80._r.l=((Z80._r.l>>1)+ci)&255; Z80._r.f=(Z80._r.l)?0:0x80; Z80._r.f=(Z80._r.f&0xEF)+co; Z80._r.m=2; },
+    SRAr_a: function() { var ci=Z80._r.a&0x80; var co=Z80._r.a&1?0x10:0; Z80._r.a=((Z80._r.a>>1)+ci)&255; Z80._r.f=(Z80._r.a)?0:0x80; Z80._r.f=(Z80._r.f&0xEF)+co; Z80._r.m=2; },
+
+    SRLr_b: function() { var co=Z80._r.b&1?0x10:0; Z80._r.b=(Z80._r.b>>1)&255; Z80._r.f=(Z80._r.b)?0:0x80; Z80._r.f=(Z80._r.f&0xEF)+co; Z80._r.m=2; },
+    SRLr_c: function() { var co=Z80._r.c&1?0x10:0; Z80._r.c=(Z80._r.c>>1)&255; Z80._r.f=(Z80._r.c)?0:0x80; Z80._r.f=(Z80._r.f&0xEF)+co; Z80._r.m=2; },
+    SRLr_d: function() { var co=Z80._r.d&1?0x10:0; Z80._r.d=(Z80._r.d>>1)&255; Z80._r.f=(Z80._r.d)?0:0x80; Z80._r.f=(Z80._r.f&0xEF)+co; Z80._r.m=2; },
+    SRLr_e: function() { var co=Z80._r.e&1?0x10:0; Z80._r.e=(Z80._r.e>>1)&255; Z80._r.f=(Z80._r.e)?0:0x80; Z80._r.f=(Z80._r.f&0xEF)+co; Z80._r.m=2; },
+    SRLr_h: function() { var co=Z80._r.h&1?0x10:0; Z80._r.h=(Z80._r.h>>1)&255; Z80._r.f=(Z80._r.h)?0:0x80; Z80._r.f=(Z80._r.f&0xEF)+co; Z80._r.m=2; },
+    SRLr_l: function() { var co=Z80._r.l&1?0x10:0; Z80._r.l=(Z80._r.l>>1)&255; Z80._r.f=(Z80._r.l)?0:0x80; Z80._r.f=(Z80._r.f&0xEF)+co; Z80._r.m=2; },
+    SRLr_a: function() { var co=Z80._r.a&1?0x10:0; Z80._r.a=(Z80._r.a>>1)&255; Z80._r.f=(Z80._r.a)?0:0x80; Z80._r.f=(Z80._r.f&0xEF)+co; Z80._r.m=2; },
+
+    CPL: function() { Z80._r.a ^= 255; Z80._r.f=Z80._r.a?0:0x80; Z80._r.m=1; },
+    NEG: function() { Z80._r.a=0-Z80._r.a; Z80._r.f=(Z80._r.a<0)?0x10:0; Z80._r.a&=255; if(!Z80._r.a) Z80._r.f|=0x80; Z80._r.m=2; },
+
+    CCF: function() { var ci=Z80._r.f&0x10?0:0x10; Z80._r.f=(Z80._r.f&0xEF)+ci; Z80._r.m=1; },
+    SCF: function() { Z80._r.f|=0x10; Z80._r.m=1; },
+
+    /*--- Stack ---*/
+    PUSHBC: function() { Z80._r.sp--; MMU.wb(Z80._r.sp,Z80._r.b); Z80._r.sp--; MMU.wb(Z80._r.sp,Z80._r.c); Z80._r.m=3; },
+    PUSHDE: function() { Z80._r.sp--; MMU.wb(Z80._r.sp,Z80._r.d); Z80._r.sp--; MMU.wb(Z80._r.sp,Z80._r.e); Z80._r.m=3; },
+    PUSHHL: function() { Z80._r.sp--; MMU.wb(Z80._r.sp,Z80._r.h); Z80._r.sp--; MMU.wb(Z80._r.sp,Z80._r.l); Z80._r.m=3; },
+    PUSHAF: function() { Z80._r.sp--; MMU.wb(Z80._r.sp,Z80._r.a); Z80._r.sp--; MMU.wb(Z80._r.sp,Z80._r.f); Z80._r.m=3; },
+
+    POPBC: function() { Z80._r.c=MMU.rb(Z80._r.sp); Z80._r.sp++; Z80._r.b=MMU.rb(Z80._r.sp); Z80._r.sp++; Z80._r.m=3; },
+    POPDE: function() { Z80._r.e=MMU.rb(Z80._r.sp); Z80._r.sp++; Z80._r.d=MMU.rb(Z80._r.sp); Z80._r.sp++; Z80._r.m=3; },
+    POPHL: function() { Z80._r.l=MMU.rb(Z80._r.sp); Z80._r.sp++; Z80._r.h=MMU.rb(Z80._r.sp); Z80._r.sp++; Z80._r.m=3; },
+    POPAF: function() { Z80._r.f=MMU.rb(Z80._r.sp); Z80._r.sp++; Z80._r.a=MMU.rb(Z80._r.sp); Z80._r.sp++; Z80._r.m=3; },
+*/
+
+    /*--- Jump ---*/
+    pub fn jp_nn(&mut self) {
+        self.reg_pc = self.mmu.borrow_mut().rw(&self, self.reg_pc);
+        self.reg_m = 3;
     }
+    pub fn jp_hl(&mut self) {
+        self.reg_pc = (self.reg_h as u16) << 8 + self.reg_l as u16;
+        self.reg_m = 1;
+    }
+    pub fn jp_nz_nn(&mut self) {
+        self.reg_m = 3;
+        if (self.reg_f & 0x80) == 0x00 {
+            self.reg_pc = self.mmu.borrow_mut().rw(&self, self.reg_pc);
+            self.reg_m += 1;
+        } else {
+            self.reg_pc += 2;
+        }
+    }
+    pub fn jp_z_nn(&mut self) {
+        self.reg_m = 3;
+        if (self.reg_f & 0x80) == 0x80 {
+            self.reg_pc = self.mmu.borrow_mut().rw(&self, self.reg_pc);
+            self.reg_m += 1;
+        } else {
+            self.reg_pc += 2;
+        }
+    }
+    pub fn jp_nc_nn(&mut self) {
+        self.reg_m = 3;
+        if (self.reg_f & 0x10) == 0x00 {
+            self.reg_pc = self.mmu.borrow_mut().rw(&self, self.reg_pc);
+            self.reg_m += 1;
+        } else {
+            self.reg_pc += 2;
+        }
+    }
+    pub fn jp_c_nn(&mut self) {
+        self.reg_m = 3;
+        if (self.reg_f & 0x10) == 0x10 {
+            self.reg_pc = self.mmu.borrow_mut().rw(&self, self.reg_pc);
+            self.reg_m += 1;
+        } else {
+            self.reg_pc += 2;
+        }
+    }
+
+    /*
+    JRn: function() { var i=MMU.rb(Z80._r.pc); if(i>127) i=-((~i+1)&255); Z80._r.pc++; Z80._r.m=2; Z80._r.pc+=i; Z80._r.m++; },
+    JRNZn: function() { var i=MMU.rb(Z80._r.pc); if(i>127) i=-((~i+1)&255); Z80._r.pc++; Z80._r.m=2; if((Z80._r.f&0x80)==0x00) { Z80._r.pc+=i; Z80._r.m++; } },
+    JRZn: function()  { var i=MMU.rb(Z80._r.pc); if(i>127) i=-((~i+1)&255); Z80._r.pc++; Z80._r.m=2; if((Z80._r.f&0x80)==0x80) { Z80._r.pc+=i; Z80._r.m++; } },
+    JRNCn: function() { var i=MMU.rb(Z80._r.pc); if(i>127) i=-((~i+1)&255); Z80._r.pc++; Z80._r.m=2; if((Z80._r.f&0x10)==0x00) { Z80._r.pc+=i; Z80._r.m++; } },
+    JRCn: function()  { var i=MMU.rb(Z80._r.pc); if(i>127) i=-((~i+1)&255); Z80._r.pc++; Z80._r.m=2; if((Z80._r.f&0x10)==0x10) { Z80._r.pc+=i; Z80._r.m++; } },
+
+    DJNZn: function() { var i=MMU.rb(Z80._r.pc); if(i>127) i=-((~i+1)&255); Z80._r.pc++; Z80._r.m=2; Z80._r.b--; if(Z80._r.b) { Z80._r.pc+=i; Z80._r.m++; } },
+    */
+
+    pub fn call_nn(&mut self) {
+        self.reg_sp -= 2;
+        self.mmu.borrow_mut().ww(&self, self.reg_sp, self.reg_pc + 2);
+        self.reg_pc = self.mmu.borrow_mut().rw(&self, self.reg_pc);
+        self.reg_m = 5;
+    }
+    pub fn call_NZnn(&mut self) {
+        self.reg_m = 3;
+        if (self.reg_f & 0x80) == 0x00 {
+            self.reg_sp -= 2;
+            self.mmu.borrow_mut().ww(&self, self.reg_sp, self.reg_pc + 2);
+            self.reg_pc = self.mmu.borrow_mut().rw(&self, self.reg_pc);
+            self.reg_m += 2;
+        } else {
+            self.reg_pc += 2;
+        }
+    }
+    pub fn call_Znn(&mut self) {
+        self.reg_m = 3;
+        if (self.reg_f & 0x80) == 0x80 {
+            self.reg_sp -= 2;
+            self.mmu.borrow_mut().ww(&self, self.reg_sp, self.reg_pc + 2);
+            self.reg_pc = self.mmu.borrow_mut().rw(&self, self.reg_pc);
+            self.reg_m += 2;
+        } else {
+            self.reg_pc += 2;
+        }
+    }
+    pub fn call_NCnn(&mut self) {
+        self.reg_m = 3;
+        if (self.reg_f & 0x10) == 0x00 {
+            self.reg_sp -= 2;
+            self.mmu.borrow_mut().ww(&self, self.reg_sp, self.reg_pc + 2);
+            self.reg_pc = self.mmu.borrow_mut().rw(&self, self.reg_pc);
+            self.reg_m += 2;
+        } else {
+            self.reg_pc += 2;
+        }
+    }
+    pub fn call_Cnn(&mut self) {
+        self.reg_m = 3;
+        if (self.reg_f & 0x10) == 0x10 {
+            self.reg_sp -= 2;
+            self.mmu.borrow_mut().ww(&self, self.reg_sp, self.reg_pc + 2);
+            self.reg_pc = self.mmu.borrow_mut().rw(&self, self.reg_pc);
+            self.reg_m += 2;
+        } else {
+            self.reg_pc += 2;
+        }
+    }
+
+// Return operations
+    pub fn ret(&mut self) {
+        self.reg_pc = self.mmu.borrow_mut().rw(&self, self.reg_sp);
+        self.reg_sp += 2;
+        self.reg_m = 3;
+    }
+    /*
+    pub fn ret_i(&mut self) {
+        self.reg_ime = 1;
+        Z80._ops.rrs(); //TODO:
+        self.reg_pc = self.mmu.borrow_mut().rw(&self, self.reg_sp);
+        self.reg_sp += 2;
+        self.reg_m = 3;
+    }
+    */
+    pub fn ret_nz(&mut self) {
+        self.reg_m = 1;
+        if (self.reg_f & 0x80) == 0x00 {
+            self.reg_pc = self.mmu.borrow_mut().rw(&self, self.reg_sp);
+            self.reg_sp += 2;
+            self.reg_m += 2;
+        }
+    }
+    pub fn ret_z(&mut self) {
+        self.reg_m = 1;
+        if (self.reg_f & 0x80) == 0x80 {
+            self.reg_pc = self.mmu.borrow_mut().rw(&self, self.reg_sp);
+            self.reg_sp += 2;
+            self.reg_m += 2;
+        }
+    }
+    pub fn ret_nc(&mut self) {
+        self.reg_m = 1;
+        if (self.reg_f & 0x10) == 0x00 {
+            self.reg_pc = self.mmu.borrow_mut().rw(&self, self.reg_sp);
+            self.reg_sp += 2;
+            self.reg_m += 2;
+        }
+    }
+    pub fn ret_c(&mut self) {
+        self.reg_m = 1;
+        if (self.reg_f & 0x10) == 0x10 {
+            self.reg_pc = self.mmu.borrow_mut().rw(&self, self.reg_sp);
+            self.reg_sp += 2;
+            self.reg_m += 2;
+        }
+    }
+
+    /*
+     * TODO: I dunno what the _ops.rsv() is supposed to do...
+    /// (RST 0x00): All routine at 0x0000
+    pub fn rst_00(&mut self) { Z80._ops.rsv(); self.reg_sp -= 2; self.mmu.borrow_mut().ww(&self, self.reg_sp, self.reg_pc); self.reg_pc = 0x00; self.reg_m = 3; }
+    pub fn rst_08(&mut self) { Z80._ops.rsv(); self.reg_sp -= 2; self.mmu.borrow_mut().ww(&self, self.reg_sp, self.reg_pc); self.reg_pc = 0x08; self.reg_m = 3; }
+    pub fn rst_10(&mut self) { Z80._ops.rsv(); self.reg_sp -= 2; self.mmu.borrow_mut().ww(&self, self.reg_sp, self.reg_pc); self.reg_pc = 0x10; self.reg_m = 3; }
+    pub fn rst_18(&mut self) { Z80._ops.rsv(); self.reg_sp -= 2; self.mmu.borrow_mut().ww(&self, self.reg_sp, self.reg_pc); self.reg_pc = 0x18; self.reg_m = 3; }
+    pub fn rst_20(&mut self) { Z80._ops.rsv(); self.reg_sp -= 2; self.mmu.borrow_mut().ww(&self, self.reg_sp, self.reg_pc); self.reg_pc = 0x20; self.reg_m = 3; }
+    pub fn rst_28(&mut self) { Z80._ops.rsv(); self.reg_sp -= 2; self.mmu.borrow_mut().ww(&self, self.reg_sp, self.reg_pc); self.reg_pc = 0x28; self.reg_m = 3; }
+    pub fn rst_30(&mut self) { Z80._ops.rsv(); self.reg_sp -= 2; self.mmu.borrow_mut().ww(&self, self.reg_sp, self.reg_pc); self.reg_pc = 0x30; self.reg_m = 3; }
+    pub fn rst_38(&mut self) { Z80._ops.rsv(); self.reg_sp -= 2; self.mmu.borrow_mut().ww(&self, self.reg_sp, self.reg_pc); self.reg_pc = 0x38; self.reg_m = 3; }
+    pub fn rst_40(&mut self) { Z80._ops.rsv(); self.reg_sp -= 2; self.mmu.borrow_mut().ww(&self, self.reg_sp, self.reg_pc); self.reg_pc = 0x40; self.reg_m = 3; }
+    pub fn rst_48(&mut self) { Z80._ops.rsv(); self.reg_sp -= 2; self.mmu.borrow_mut().ww(&self, self.reg_sp, self.reg_pc); self.reg_pc = 0x48; self.reg_m = 3; }
+    pub fn rst_50(&mut self) { Z80._ops.rsv(); self.reg_sp -= 2; self.mmu.borrow_mut().ww(&self, self.reg_sp, self.reg_pc); self.reg_pc = 0x50; self.reg_m = 3; }
+    pub fn rst_58(&mut self) { Z80._ops.rsv(); self.reg_sp -= 2; self.mmu.borrow_mut().ww(&self, self.reg_sp, self.reg_pc); self.reg_pc = 0x58; self.reg_m = 3; }
+    pub fn rst_60(&mut self) { Z80._ops.rsv(); self.reg_sp -= 2; self.mmu.borrow_mut().ww(&self, self.reg_sp, self.reg_pc); self.reg_pc = 0x60; self.reg_m = 3; }
+    */
+
     /// (CP A, B): Compare reg_b to reg_a, setting flags
     pub fn cpr_b(&mut self) {
         let mut tmp = self.reg_a;
@@ -1188,7 +1732,7 @@ static cpu_map: [CpuOp; 256] =
     Z80::nop,
     Z80::nop,
     Z80::nop,
-    Z80::addr_e,
+    Z80::add_e,
     Z80::nop,
     Z80::nop,
     Z80::nop,
