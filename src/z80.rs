@@ -721,8 +721,37 @@ impl Z80 {
         }
             self.reg_m = 1;
     }
-    //pub fn add_c_n(&mut self) { let a = self.reg_a; var m=MMU.rb(Z80._r.pc); Z80._r.a+=m; Z80._r.pc++; Z80._r.a+=(Z80._r.f&0x10)?1:0; Z80._r.f=(Z80._r.a>255)?0x10:0; Z80._r.a&=255; if(!Z80._r.a) Z80._r.f|=0x80; if((Z80._r.a^m^a)&0x10) Z80._r.f|=0x20; self.reg_m=2; },
-    //pub fn add_c_hl(&mut self) { var a=Z80._r.a; var m=MMU.rb((Z80._r.h<<8)+Z80._r.l); Z80._r.a+=m; Z80._r.a+=(Z80._r.f&0x10)?1:0; Z80._r.f=(Z80._r.a>255)?0x10:0; Z80._r.a&=255; if(!Z80._r.a) Z80._r.f|=0x80; if((Z80._r.a^m^a)&0x10) Z80._r.f|=0x20; Z80._r.m=2; },
+    pub fn add_c_n(&mut self) {
+        let a = self.reg_a;
+        let m = self.mmu.borrow_mut().rb(&self, self.reg_pc);
+        self.reg_a += m;
+        self.reg_pc += 1;
+        self.reg_a += if (self.reg_f & 0x10) != 0 { 1 } else { 0 };
+        self.reg_f = if self.reg_a > 255 { 0x10 } else { 0 };
+        self.reg_a &= 255;
+        if self.reg_a == 0 {
+            self.reg_f |= 0x80;
+        }
+        if ((self.reg_a ^ m ^ a) & 0x10) != 0 {
+            self.reg_f |= 0x20;
+        }
+        self.reg_m=2;
+    }
+    pub fn add_c_hl(&mut self) {
+        let a = self.reg_a;
+        let m = self.mmu.borrow_mut().rb(&self, (self.reg_h as u16) << 8 + self.reg_l as u16);
+        self.reg_a += m;
+        self.reg_a += if (self.reg_f & 0x10) != 0 { 1 } else { 0 };
+        self.reg_f = if self.reg_a > 255 { 0x10 } else { 0 };
+        self.reg_a &= 255;
+        if self.reg_a == 0 {
+            self.reg_f |= 0x80;
+        }
+        if ((self.reg_a ^ m ^ a) & 0x10) != 0 {
+            self.reg_f |= 0x20;
+        }
+        self.reg_m = 2;
+    }
 
 
     /// (ADD A, E): Add reg_e to reg_a, result in reg_a
