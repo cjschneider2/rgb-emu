@@ -209,40 +209,49 @@ impl Z80 {
     }
 
     /// (LOAD A, n)
-    pub fn LDrn_b(&mut self) {
+    pub fn ld_b_n(&mut self) {
         self.reg_b = self.mmu.borrow_mut().rb( &self, self.reg_pc);
         self.reg_pc += 1;
         self.reg_m = 2;
     }
-    pub fn LDrn_c(&mut self) {
+    pub fn ld_c_n(&mut self) {
         self.reg_c = self.mmu.borrow_mut().rb( &self, self.reg_pc);
         self.reg_pc += 1;
         self.reg_m = 2;
     }
-    pub fn LDrn_d(&mut self) {
+    pub fn ld_d_n(&mut self) {
         self.reg_d = self.mmu.borrow_mut().rb( &self, self.reg_pc);
         self.reg_pc += 1;
         self.reg_m = 2;
     }
-    pub fn LDrn_e(&mut self) {
+    pub fn ld_e_n(&mut self) {
         self.reg_e = self.mmu.borrow_mut().rb( &self, self.reg_pc);
         self.reg_pc += 1;
         self.reg_m = 2;
     }
-    pub fn LDrn_h(&mut self) {
+    pub fn ld_h_n(&mut self) {
         self.reg_h = self.mmu.borrow_mut().rb( &self, self.reg_pc);
         self.reg_pc += 1;
         self.reg_m = 2;
     }
-    pub fn LDrn_l(&mut self) {
+    pub fn ld_l_n(&mut self) {
         self.reg_l = self.mmu.borrow_mut().rb( &self, self.reg_pc);
         self.reg_pc += 1;
         self.reg_m = 2;
     }
-    pub fn LDrn_a(&mut self) {
+    pub fn ld_a_n(&mut self) {
         self.reg_a = self.mmu.borrow_mut().rb( &self, self.reg_pc);
         self.reg_pc += 1;
         self.reg_m = 2;
+    }
+    pub fn ld_hl_n(&mut self) {
+        self.mmu.borrow_mut().wb(
+            &self,
+            (self.reg_h as u16) << 8 + self.reg_l as u16,
+            self.mmu.borrow_mut().rb(&self, self.reg_pc)
+            );
+        self.reg_pc += 1;
+        self.reg_m = 3;
     }
 
 
