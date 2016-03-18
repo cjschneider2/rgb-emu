@@ -1005,17 +1005,127 @@ impl Z80 {
         self.reg_m = 2;
     }
 
+    pub fn cp_b(&mut self) {
+        let mut i = self.reg_a;
+        i -= self.reg_b;
+        self.reg_f = if i < 0 { 0x50 } else { 0x40 };
+        i &= 255;
+        if i == 0 {
+            self.reg_f |= 0x80;
+        }
+        if ((self.reg_a ^ self.reg_b ^ i) & 0x10) != 0 {
+            self.reg_f |= 0x20;
+        }
+        self.reg_m = 1;
+    }
+    pub fn cp_c(&mut self) {
+        let mut i = self.reg_a;
+        i -= self.reg_c;
+        self.reg_f = if i < 0 { 0x50 } else { 0x40 };
+        i &= 255;
+        if i == 0 {
+            self.reg_f |= 0x80;
+        }
+        if ((self.reg_a ^ self.reg_c ^ i) & 0x10) != 0 {
+            self.reg_f |= 0x20;
+        }
+        self.reg_m = 1;
+    }
+    pub fn cp_d(&mut self) {
+        let mut i = self.reg_a;
+        i -= self.reg_d;
+        self.reg_f = if i < 0 { 0x50 } else { 0x40 };
+        i &= 255;
+        if i == 0 {
+            self.reg_f |= 0x80;
+        }
+        if ((self.reg_a ^ self.reg_d ^ i) & 0x10) != 0 {
+            self.reg_f |= 0x20;
+        }
+        self.reg_m = 1;
+    }
+    pub fn cp_e(&mut self) {
+        let mut i = self.reg_a;
+        i -= self.reg_e;
+        self.reg_f = if i < 0 { 0x50 } else { 0x40 };
+        i &= 255;
+        if i == 0 {
+            self.reg_f |= 0x80;
+        }
+        if ((self.reg_a ^ self.reg_e ^ i) & 0x10) != 0 {
+            self.reg_f |= 0x20;
+        }
+        self.reg_m = 1;
+    }
+    pub fn cp_h(&mut self) {
+        let mut i = self.reg_a;
+        i -= self.reg_h;
+        self.reg_f = if i < 0 { 0x50 } else { 0x40 };
+        i &= 255;
+        if i == 0 {
+            self.reg_f |= 0x80;
+        }
+        if ((self.reg_a ^ self.reg_h ^ i) & 0x10) != 0 {
+            self.reg_f |= 0x20;
+        }
+        self.reg_m = 1;
+    }
+    pub fn cp_l(&mut self) {
+        let mut i = self.reg_a;
+        i -= self.reg_l;
+        self.reg_f = if i < 0 { 0x50 } else { 0x40 };
+        i &= 255;
+        if i == 0 {
+            self.reg_f |= 0x80;
+        }
+        if ((self.reg_a ^ self.reg_l ^ i) & 0x10) != 0 {
+            self.reg_f |= 0x20;
+        }
+        self.reg_m = 1;
+    }
+    pub fn cp_a(&mut self) {
+        let mut i = self.reg_a;
+        i -= self.reg_a;
+        self.reg_f = if i < 0 { 0x50 } else { 0x40 };
+        i &= 255;
+        if i == 0 {
+            self.reg_f |= 0x80;
+        }
+        if ((self.reg_a ^ self.reg_a ^ i) & 0x10) != 0 {
+            self.reg_f |= 0x20;
+        }
+        self.reg_m = 1;
+    }
+    pub fn cp_hl(&mut self){
+        let mut i = self.reg_a;
+        let m = self.mmu.borrow_mut().rb(&self, (self.reg_h as u16) << 8 + self.reg_l as u16);
+        i -= m;
+        self.reg_f = if i < 0 { 0x50 } else { 0x40 };
+        i &= 255;
+        if i == 0 {
+            self.reg_f |= 0x80;
+        }
+        if ((self.reg_a ^ i ^ m) & 0x10) != 0 {
+            self.reg_f |= 0x20;
+        }
+        self.reg_m = 2;
+    }
+    pub fn cp_n(&mut self) {
+        let mut i = self.reg_a;
+        let m = self.mmu.borrow_mut().rb(&self, self.reg_pc);
+        i -= m;
+        self.reg_pc += 1;
+        self.reg_f = if i < 0 { 0x50 } else { 0x40 };
+        i &= 255;
+        if i == 0 {
+            self.reg_f |= 0x80;
+        }
+        if ((self.reg_a ^ i ^ m) & 0x10) != 0 {
+            self.reg_f |= 0x20;
+        }
+        self.reg_m = 2;
+    }
 /*
-    CPr_b: function() { var i=Z80._r.a; i-=Z80._r.b; Z80._r.f=(i<0)?0x50:0x40; i&=255; if(!i) Z80._r.f|=0x80; if((Z80._r.a^Z80._r.b^i)&0x10) Z80._r.f|=0x20; Z80._r.m=1; },
-    CPr_c: function() { var i=Z80._r.a; i-=Z80._r.c; Z80._r.f=(i<0)?0x50:0x40; i&=255; if(!i) Z80._r.f|=0x80; if((Z80._r.a^Z80._r.c^i)&0x10) Z80._r.f|=0x20; Z80._r.m=1; },
-    CPr_d: function() { var i=Z80._r.a; i-=Z80._r.d; Z80._r.f=(i<0)?0x50:0x40; i&=255; if(!i) Z80._r.f|=0x80; if((Z80._r.a^Z80._r.d^i)&0x10) Z80._r.f|=0x20; Z80._r.m=1; },
-    CPr_e: function() { var i=Z80._r.a; i-=Z80._r.e; Z80._r.f=(i<0)?0x50:0x40; i&=255; if(!i) Z80._r.f|=0x80; if((Z80._r.a^Z80._r.e^i)&0x10) Z80._r.f|=0x20; Z80._r.m=1; },
-    CPr_h: function() { var i=Z80._r.a; i-=Z80._r.h; Z80._r.f=(i<0)?0x50:0x40; i&=255; if(!i) Z80._r.f|=0x80; if((Z80._r.a^Z80._r.h^i)&0x10) Z80._r.f|=0x20; Z80._r.m=1; },
-    CPr_l: function() { var i=Z80._r.a; i-=Z80._r.l; Z80._r.f=(i<0)?0x50:0x40; i&=255; if(!i) Z80._r.f|=0x80; if((Z80._r.a^Z80._r.l^i)&0x10) Z80._r.f|=0x20; Z80._r.m=1; },
-    CPr_a: function() { var i=Z80._r.a; i-=Z80._r.a; Z80._r.f=(i<0)?0x50:0x40; i&=255; if(!i) Z80._r.f|=0x80; if((Z80._r.a^Z80._r.a^i)&0x10) Z80._r.f|=0x20; Z80._r.m=1; },
-    CPHL: function() { var i=Z80._r.a; var m=MMU.rb((Z80._r.h<<8)+Z80._r.l); i-=m; Z80._r.f=(i<0)?0x50:0x40; i&=255; if(!i) Z80._r.f|=0x80; if((Z80._r.a^i^m)&0x10) Z80._r.f|=0x20; Z80._r.m=2; },
-    CPn: function() { var i=Z80._r.a; var m=MMU.rb(Z80._r.pc); i-=m; Z80._r.pc++; Z80._r.f=(i<0)?0x50:0x40; i&=255; if(!i) Z80._r.f|=0x80; if((Z80._r.a^i^m)&0x10) Z80._r.f|=0x20; Z80._r.m=2; },
-
     DAA: function() { var a=Z80._r.a; if((Z80._r.f&0x20)||((Z80._r.a&15)>9)) Z80._r.a+=6; Z80._r.f&=0xEF; if((Z80._r.f&0x20)||(a>0x99)) { Z80._r.a+=0x60; Z80._r.f|=0x10; } Z80._r.m=1; },
 
     ANDr_b: function() { Z80._r.a&=Z80._r.b; Z80._r.a&=255; Z80._r.f=Z80._r.a?0:0x80; Z80._r.m=1; },
