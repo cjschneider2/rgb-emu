@@ -1125,57 +1125,288 @@ impl Z80 {
         }
         self.reg_m = 2;
     }
+
+    pub fn daa(&mut self) {
+        let a = self.reg_a;
+        if ((self.reg_f & 0x20) != 0 || (self.reg_a & 15) > 9) {
+            self.reg_a += 6;
+        }
+        self.reg_f &= 0xEF;
+        if ((self.reg_f & 0x20) != 0 || ( a > 0x99)) {
+            self.reg_a += 0x60;
+            self.reg_f |= 0x10;
+        }
+        self.reg_m = 1;
+    }
+
+    pub fn and_b(&mut self) {
+        self.reg_a &= self.reg_b;
+        self.reg_a &= 255;
+        self.reg_f = if self.reg_a != 0 { 0 } else { 0x80 };
+        self.reg_m = 1;
+    }
+    pub fn and_c(&mut self) {
+        self.reg_a &= self.reg_c;
+        self.reg_a &= 255;
+        self.reg_f = if self.reg_a != 0 { 0 } else { 0x80 };
+        self.reg_m = 1;
+    }
+    pub fn and_d(&mut self) {
+        self.reg_a &= self.reg_d;
+        self.reg_a &= 255;
+        self.reg_f = if self.reg_a != 0 { 0 } else { 0x80 };
+        self.reg_m = 1;
+    }
+    pub fn and_e(&mut self) {
+        self.reg_a &= self.reg_e;
+        self.reg_a &= 255;
+        self.reg_f = if self.reg_a != 0 { 0 } else { 0x80 };
+        self.reg_m = 1;
+    }
+    pub fn and_h(&mut self) {
+        self.reg_a &= self.reg_h;
+        self.reg_a &= 255;
+        self.reg_f = if self.reg_a != 0 { 0 } else { 0x80 };
+        self.reg_m = 1;
+    }
+    pub fn and_l(&mut self) {
+        self.reg_a &= self.reg_l;
+        self.reg_a &= 255;
+        self.reg_f = if self.reg_a != 0 { 0 } else { 0x80 };
+        self.reg_m = 1;
+    }
+    pub fn and_a(&mut self) {
+        self.reg_a &= self.reg_a;
+        self.reg_a &= 255;
+        self.reg_f = if self.reg_a != 0 { 0 } else { 0x80 };
+        self.reg_m = 1;
+    }
+    pub fn and_hl(&mut self) {
+        self.reg_a &= self.mmu.borrow_mut().rb(&self, (self.reg_h as u16) <<8 + self.reg_l as u16);
+        self.reg_a &= 255;
+        self.reg_f = if self.reg_a != 0 { 0 } else { 0x80 };
+        self.reg_m = 2;
+    }
+    pub fn and_n(&mut self) {
+        self.reg_a &= self.mmu.borrow_mut().rb(&self, self.reg_pc);
+        self.reg_pc += 1;
+        self.reg_a &= 255;
+        self.reg_f = if self.reg_a != 0 { 0 } else { 0x80 };
+        self.reg_m = 2;
+    }
+
+    pub fn or_b(&mut self) {
+        self.reg_a |= self.reg_b;
+        self.reg_a &= 255;
+        self.reg_f = if self.reg_a != 0 { 0 } else { 0x80 };
+        self.reg_m = 1;
+    }
+    pub fn or_c(&mut self) {
+        self.reg_a |= self.reg_c;
+        self.reg_a &= 255;
+        self.reg_f = if self.reg_a != 0 { 0 } else { 0x80 };
+        self.reg_m = 1;
+    }
+    pub fn or_d(&mut self) {
+        self.reg_a |= self.reg_d;
+        self.reg_a &= 255;
+        self.reg_f = if self.reg_a != 0 { 0 } else { 0x80 };
+        self.reg_m = 1;
+    }
+    pub fn or_e(&mut self) {
+        self.reg_a |= self.reg_e;
+        self.reg_a &= 255;
+        self.reg_f = if self.reg_a != 0 { 0 } else { 0x80 };
+        self.reg_m = 1;
+    }
+    pub fn or_h(&mut self) {
+        self.reg_a |= self.reg_h;
+        self.reg_a &= 255;
+        self.reg_f = if self.reg_a != 0 { 0 } else { 0x80 };
+        self.reg_m = 1;
+    }
+    pub fn or_l(&mut self) {
+        self.reg_a |= self.reg_l;
+        self.reg_a &= 255;
+        self.reg_f = if self.reg_a != 0 { 0 } else { 0x80 };
+        self.reg_m = 1;
+    }
+    pub fn or_a(&mut self) {
+        self.reg_a |= self.reg_a;
+        self.reg_a &= 255;
+        self.reg_f = if self.reg_a != 0 { 0 } else { 0x80 };
+        self.reg_m = 1;
+    }
+    pub fn or_hl(&mut self) {
+        self.reg_a |= self.mmu.borrow_mut().rb(&self, (self.reg_h as u16) << 8 + self.reg_l as u16);
+        self.reg_a &= 255;
+        self.reg_f = if self.reg_a != 0 { 0 } else { 0x80 };
+        self.reg_m = 2;
+    }
+    pub fn or_n(&mut self) {
+        self.reg_a |= self.mmu.borrow_mut().rb(&self, self.reg_pc);
+        self.reg_pc += 1;
+        self.reg_a &= 255;
+        self.reg_f = if self.reg_a != 0 { 0 } else { 0x80 };
+        self.reg_m = 2;
+    }
+
+    pub fn xor_b(&mut self) {
+        self.reg_a ^= self.reg_b;
+        self.reg_a &= 255;
+        self.reg_f = if self.reg_a != 0 { 0 } else { 0x80 };
+        self.reg_m = 1;
+    }
+    pub fn xor_c(&mut self) {
+        self.reg_a ^= self.reg_c;
+        self.reg_a &= 255;
+        self.reg_f = if self.reg_a != 0 { 0 } else { 0x80 };
+        self.reg_m = 1;
+    }
+    pub fn xor_d(&mut self) {
+        self.reg_a ^= self.reg_d;
+        self.reg_a &= 255;
+        self.reg_f = if self.reg_a != 0 { 0 } else { 0x80 };
+        self.reg_m = 1;
+    }
+    pub fn xor_e(&mut self) {
+        self.reg_a ^= self.reg_e;
+        self.reg_a &= 255;
+        self.reg_f = if self.reg_a != 0 { 0 } else { 0x80 };
+        self.reg_m = 1;
+    }
+    pub fn xor_h(&mut self) {
+        self.reg_a ^= self.reg_h;
+        self.reg_a &= 255;
+        self.reg_f = if self.reg_a != 0 { 0 } else { 0x80 };
+        self.reg_m = 1;
+    }
+    pub fn xor_l(&mut self) {
+        self.reg_a ^= self.reg_l;
+        self.reg_a &= 255;
+        self.reg_f = if self.reg_a != 0 { 0 } else { 0x80 };
+        self.reg_m = 1;
+    }
+    pub fn xor_a(&mut self) {
+        self.reg_a ^= self.reg_a;
+        self.reg_a &= 255;
+        self.reg_f = if self.reg_a != 0 { 0 } else { 0x80 };
+        self.reg_m = 1;
+    }
+    pub fn xor_hl(&mut self) {
+        self.reg_a ^= self.mmu.borrow_mut().rb(&self, (self.reg_h as u16) << 8 + self.reg_l as u16);
+        self.reg_a &= 255;
+        self.reg_f = if self.reg_a != 0 { 0 } else { 0x80 };
+        self.reg_m = 2;
+    }
+    pub fn xor_n(&mut self) {
+        self.reg_a ^= self.mmu.borrow_mut().rb(&self, self.reg_pc);
+        self.reg_pc += 1;
+        self.reg_a &= 255;
+        self.reg_f = if self.reg_a != 0 { 0 } else { 0x80 };
+        self.reg_m = 2;
+    }
+    pub fn inc_b(&mut self) {
+        self.reg_b += 1;
+        self.reg_b &= 255;
+        self.reg_f = if self.reg_b != 0 { 0 } else { 0x80 };
+        self.reg_m = 1;
+    }
+    pub fn inc_c(&mut self) {
+        self.reg_c += 1;
+        self.reg_c &= 255;
+        self.reg_f = if self.reg_c != 0 { 0 } else { 0x80 };
+        self.reg_m = 1;
+    }
+    pub fn inc_d(&mut self) {
+        self.reg_d += 1;
+        self.reg_d &= 255;
+        self.reg_f = if self.reg_d != 0 { 0 } else { 0x80 };
+        self.reg_m = 1;
+    }
+    pub fn inc_e(&mut self) {
+        self.reg_e += 1;
+        self.reg_e &= 255;
+        self.reg_f = if self.reg_e != 0 { 0 } else { 0x80 };
+        self.reg_m = 1;
+    }
+    pub fn inc_h(&mut self) {
+        self.reg_h += 1;
+        self.reg_h &= 255;
+        self.reg_f = if self.reg_h != 0 { 0 } else { 0x80 };
+        self.reg_m = 1;
+    }
+    pub fn inc_l(&mut self) {
+        self.reg_l += 1;
+        self.reg_l &= 255;
+        self.reg_f = if self.reg_l != 0 { 0 } else { 0x80 };
+        self.reg_m = 1;
+    }
+    pub fn inc_a(&mut self) {
+        self.reg_a += 1;
+        self.reg_a &= 255;
+        self.reg_f = if self.reg_a != 0 { 0 } else { 0x80 };
+        self.reg_m = 1;
+    }
+    pub fn inc_hl(&mut self) {
+        let mut i = self.mmu.borrow_mut().rb(&self, (self.reg_h as u16) << 8 + self.reg_l as u16) + 1;
+        i &= 255;
+        self.mmu.borrow_mut().wb(&self, (self.reg_h as u16) << 8 + self.reg_l as u16,i);
+        self.reg_f = if i != 0 { 0 } else { 0x80 };
+        self.reg_m = 3;
+    }
+
+    pub fn dec_b(&mut self) {
+        self.reg_b -= 1;
+        self.reg_b &= 255;
+        self.reg_f = if self.reg_b != 0 { 0 } else { 0x80 };
+        self.reg_m = 1;
+    }
+    pub fn dec_c(&mut self) {
+        self.reg_c -= 1;
+        self.reg_c &= 255;
+        self.reg_f = if self.reg_c != 0 { 0 } else { 0x80 };
+        self.reg_m = 1;
+    }
+    pub fn dec_d(&mut self) {
+        self.reg_d -= 1;
+        self.reg_d &= 255;
+        self.reg_f = if self.reg_d != 0 { 0 } else { 0x80 };
+        self.reg_m = 1;
+    }
+    pub fn dec_e(&mut self) {
+        self.reg_e -= 1;
+        self.reg_e &= 255;
+        self.reg_f = if self.reg_e != 0 { 0 } else { 0x80 };
+        self.reg_m = 1;
+    }
+    pub fn dec_h(&mut self) {
+        self.reg_h -= 1;
+        self.reg_h &= 255;
+        self.reg_f = if self.reg_h != 0 { 0 } else { 0x80 };
+        self.reg_m = 1;
+    }
+    pub fn dec_l(&mut self) {
+        self.reg_l -= 1;
+        self.reg_l &= 255;
+        self.reg_f = if self.reg_l != 0 { 0 } else { 0x80 };
+        self.reg_m = 1;
+    }
+    pub fn dec_a(&mut self) {
+        self.reg_a -= 1;
+        self.reg_a &= 255;
+        self.reg_f = if self.reg_a != 0 { 0 } else { 0x80 };
+        self.reg_m = 1;
+    }
+    pub fn dec_hl(&mut self) {
+        let mut i = self.mmu.borrow_mut().rb(&self, (self.reg_h as u16) << 8 + self.reg_l as u 16) - 1;
+        i &= 255;
+        self.mmu.borrow_mut().wb(&self, (self.reg_h as u16) << 8 + self.reg_l as u16, i);
+        self.reg_f = if i != 0 { 0 } else { 0x80 };
+        self.reg_m = 3;
+    }
+
 /*
-    DAA: function() { var a=Z80._r.a; if((Z80._r.f&0x20)||((Z80._r.a&15)>9)) Z80._r.a+=6; Z80._r.f&=0xEF; if((Z80._r.f&0x20)||(a>0x99)) { Z80._r.a+=0x60; Z80._r.f|=0x10; } Z80._r.m=1; },
-
-    ANDr_b: function() { Z80._r.a&=Z80._r.b; Z80._r.a&=255; Z80._r.f=Z80._r.a?0:0x80; Z80._r.m=1; },
-    ANDr_c: function() { Z80._r.a&=Z80._r.c; Z80._r.a&=255; Z80._r.f=Z80._r.a?0:0x80; Z80._r.m=1; },
-    ANDr_d: function() { Z80._r.a&=Z80._r.d; Z80._r.a&=255; Z80._r.f=Z80._r.a?0:0x80; Z80._r.m=1; },
-    ANDr_e: function() { Z80._r.a&=Z80._r.e; Z80._r.a&=255; Z80._r.f=Z80._r.a?0:0x80; Z80._r.m=1; },
-    ANDr_h: function() { Z80._r.a&=Z80._r.h; Z80._r.a&=255; Z80._r.f=Z80._r.a?0:0x80; Z80._r.m=1; },
-    ANDr_l: function() { Z80._r.a&=Z80._r.l; Z80._r.a&=255; Z80._r.f=Z80._r.a?0:0x80; Z80._r.m=1; },
-    ANDr_a: function() { Z80._r.a&=Z80._r.a; Z80._r.a&=255; Z80._r.f=Z80._r.a?0:0x80; Z80._r.m=1; },
-    ANDHL: function() { Z80._r.a&=MMU.rb((Z80._r.h<<8)+Z80._r.l); Z80._r.a&=255; Z80._r.f=Z80._r.a?0:0x80; Z80._r.m=2; },
-    ANDn: function() { Z80._r.a&=MMU.rb(Z80._r.pc); Z80._r.pc++; Z80._r.a&=255; Z80._r.f=Z80._r.a?0:0x80; Z80._r.m=2; },
-
-    ORr_b: function() { Z80._r.a|=Z80._r.b; Z80._r.a&=255; Z80._r.f=Z80._r.a?0:0x80; Z80._r.m=1; },
-    ORr_c: function() { Z80._r.a|=Z80._r.c; Z80._r.a&=255; Z80._r.f=Z80._r.a?0:0x80; Z80._r.m=1; },
-    ORr_d: function() { Z80._r.a|=Z80._r.d; Z80._r.a&=255; Z80._r.f=Z80._r.a?0:0x80; Z80._r.m=1; },
-    ORr_e: function() { Z80._r.a|=Z80._r.e; Z80._r.a&=255; Z80._r.f=Z80._r.a?0:0x80; Z80._r.m=1; },
-    ORr_h: function() { Z80._r.a|=Z80._r.h; Z80._r.a&=255; Z80._r.f=Z80._r.a?0:0x80; Z80._r.m=1; },
-    ORr_l: function() { Z80._r.a|=Z80._r.l; Z80._r.a&=255; Z80._r.f=Z80._r.a?0:0x80; Z80._r.m=1; },
-    ORr_a: function() { Z80._r.a|=Z80._r.a; Z80._r.a&=255; Z80._r.f=Z80._r.a?0:0x80; Z80._r.m=1; },
-    ORHL: function() { Z80._r.a|=MMU.rb((Z80._r.h<<8)+Z80._r.l); Z80._r.a&=255; Z80._r.f=Z80._r.a?0:0x80; Z80._r.m=2; },
-    ORn: function() { Z80._r.a|=MMU.rb(Z80._r.pc); Z80._r.pc++; Z80._r.a&=255; Z80._r.f=Z80._r.a?0:0x80; Z80._r.m=2; },
-
-    XORr_b: function() { Z80._r.a^=Z80._r.b; Z80._r.a&=255; Z80._r.f=Z80._r.a?0:0x80; Z80._r.m=1; },
-    XORr_c: function() { Z80._r.a^=Z80._r.c; Z80._r.a&=255; Z80._r.f=Z80._r.a?0:0x80; Z80._r.m=1; },
-    XORr_d: function() { Z80._r.a^=Z80._r.d; Z80._r.a&=255; Z80._r.f=Z80._r.a?0:0x80; Z80._r.m=1; },
-    XORr_e: function() { Z80._r.a^=Z80._r.e; Z80._r.a&=255; Z80._r.f=Z80._r.a?0:0x80; Z80._r.m=1; },
-    XORr_h: function() { Z80._r.a^=Z80._r.h; Z80._r.a&=255; Z80._r.f=Z80._r.a?0:0x80; Z80._r.m=1; },
-    XORr_l: function() { Z80._r.a^=Z80._r.l; Z80._r.a&=255; Z80._r.f=Z80._r.a?0:0x80; Z80._r.m=1; },
-    XORr_a: function() { Z80._r.a^=Z80._r.a; Z80._r.a&=255; Z80._r.f=Z80._r.a?0:0x80; Z80._r.m=1; },
-    XORHL: function() { Z80._r.a^=MMU.rb((Z80._r.h<<8)+Z80._r.l); Z80._r.a&=255; Z80._r.f=Z80._r.a?0:0x80; Z80._r.m=2; },
-    XORn: function() { Z80._r.a^=MMU.rb(Z80._r.pc); Z80._r.pc++; Z80._r.a&=255; Z80._r.f=Z80._r.a?0:0x80; Z80._r.m=2; },
-
-    INCr_b: function() { Z80._r.b++; Z80._r.b&=255; Z80._r.f=Z80._r.b?0:0x80; Z80._r.m=1; },
-    INCr_c: function() { Z80._r.c++; Z80._r.c&=255; Z80._r.f=Z80._r.c?0:0x80; Z80._r.m=1; },
-    INCr_d: function() { Z80._r.d++; Z80._r.d&=255; Z80._r.f=Z80._r.d?0:0x80; Z80._r.m=1; },
-    INCr_e: function() { Z80._r.e++; Z80._r.e&=255; Z80._r.f=Z80._r.e?0:0x80; Z80._r.m=1; },
-    INCr_h: function() { Z80._r.h++; Z80._r.h&=255; Z80._r.f=Z80._r.h?0:0x80; Z80._r.m=1; },
-    INCr_l: function() { Z80._r.l++; Z80._r.l&=255; Z80._r.f=Z80._r.l?0:0x80; Z80._r.m=1; },
-    INCr_a: function() { Z80._r.a++; Z80._r.a&=255; Z80._r.f=Z80._r.a?0:0x80; Z80._r.m=1; },
-    INCHLm: function() { var i=MMU.rb((Z80._r.h<<8)+Z80._r.l)+1; i&=255; MMU.wb((Z80._r.h<<8)+Z80._r.l,i); Z80._r.f=i?0:0x80; Z80._r.m=3; },
-
-    DECr_b: function() { Z80._r.b--; Z80._r.b&=255; Z80._r.f=Z80._r.b?0:0x80; Z80._r.m=1; },
-    DECr_c: function() { Z80._r.c--; Z80._r.c&=255; Z80._r.f=Z80._r.c?0:0x80; Z80._r.m=1; },
-    DECr_d: function() { Z80._r.d--; Z80._r.d&=255; Z80._r.f=Z80._r.d?0:0x80; Z80._r.m=1; },
-    DECr_e: function() { Z80._r.e--; Z80._r.e&=255; Z80._r.f=Z80._r.e?0:0x80; Z80._r.m=1; },
-    DECr_h: function() { Z80._r.h--; Z80._r.h&=255; Z80._r.f=Z80._r.h?0:0x80; Z80._r.m=1; },
-    DECr_l: function() { Z80._r.l--; Z80._r.l&=255; Z80._r.f=Z80._r.l?0:0x80; Z80._r.m=1; },
-    DECr_a: function() { Z80._r.a--; Z80._r.a&=255; Z80._r.f=Z80._r.a?0:0x80; Z80._r.m=1; },
-    DECHLm: function() { var i=MMU.rb((Z80._r.h<<8)+Z80._r.l)-1; i&=255; MMU.wb((Z80._r.h<<8)+Z80._r.l,i); Z80._r.f=i?0:0x80; Z80._r.m=3; },
-
     INCBC: function() { Z80._r.c=(Z80._r.c+1)&255; if(!Z80._r.c) Z80._r.b=(Z80._r.b+1)&255; Z80._r.m=1; },
     INCDE: function() { Z80._r.e=(Z80._r.e+1)&255; if(!Z80._r.e) Z80._r.d=(Z80._r.d+1)&255; Z80._r.m=1; },
     INCHL: function() { Z80._r.l=(Z80._r.l+1)&255; if(!Z80._r.l) Z80._r.h=(Z80._r.h+1)&255; Z80._r.m=1; },
