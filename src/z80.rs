@@ -128,8 +128,6 @@ impl Z80 {
     pub fn ld_a_l(&mut self) { self.reg_a = self.reg_l; self.reg_m = 1; self.reg_t = 4;}
     pub fn ld_a_a(&mut self) { self.reg_a = self.reg_a; self.reg_m = 1; self.reg_t = 4;}
     /// (LOAD B, (HL))
-    pub fn ld_b_hl(&mut self) {
-        let addr:u16 = ((self.reg_h as u16) << 8u16) + self.reg_l as u16;
         self.reg_b = self.mmu.borrow_mut().rb(&self, addr);
         self.reg_m=2; self.reg_t=8;
     }
@@ -1406,17 +1404,59 @@ impl Z80 {
         self.reg_m = 3;
     }
 
+    pub fn inc_bc(&mut self) {
+        self.reg_c =(self.reg_c + 1) & 255;
+        if(!self.reg_c) == 0 {
+            self.reg_b = (self.reg_b + 1) & 255;
+        }
+        self.reg_m = 1;
+    }
+    pub fn inc_de(&mut self) {
+        self.reg_e =(self.reg_e + 1) & 255;
+        if(!self.reg_e) == 0 {
+            self.reg_d = (self.reg_d + 1) & 255;
+        }
+        self.reg_m = 1;
+    }
+    pub fn inc_hl(&mut self) {
+        self.reg_l =(self.reg_l + 1) & 255;
+        if(!self.reg_l) == 0 {
+            self.reg_h = (self.reg_h + 1) & 255;
+        }
+        self.reg_m = 1;
+    }
+    pub fn inc_sp(&mut self) {
+        self.reg_sp = (self.reg_sp + 1) & 65535;
+        self.reg_m=1;
+    }
+
+    pub fn dec_bc(&mut self) {
+        self.reg_c = (self.reg_c - 1) & 255;
+        if self.reg_c == 255 {
+            self.reg_b = (self.reg_b - 1) & 255;
+        }
+        self.reg_m = 1;
+    }
+    pub fn dec_de(&mut self) {
+        self.reg_e = (self.reg_e - 1) & 255;
+        if self.reg_e == 255 {
+            self.reg_d = (self.reg_d - 1) & 255;
+        }
+        self.reg_m = 1;
+    }
+    pub fn dec_hl(&mut self) {
+        self.reg_l = (self.reg_l - 1) & 255;
+        if self.reg_l == 255 {
+            self.reg_h = (self.reg_h - 1) & 255;
+        }
+        self.reg_m = 1;
+    }
+    pub fn dec_sp(&mut self) {
+        self.reg_sp = (self.reg_sp - 1) & 65535;
+        self.reg_m = 1;
+    }
+
 /*
-    INCBC: function() { Z80._r.c=(Z80._r.c+1)&255; if(!Z80._r.c) Z80._r.b=(Z80._r.b+1)&255; Z80._r.m=1; },
-    INCDE: function() { Z80._r.e=(Z80._r.e+1)&255; if(!Z80._r.e) Z80._r.d=(Z80._r.d+1)&255; Z80._r.m=1; },
-    INCHL: function() { Z80._r.l=(Z80._r.l+1)&255; if(!Z80._r.l) Z80._r.h=(Z80._r.h+1)&255; Z80._r.m=1; },
-    INCSP: function() { Z80._r.sp=(Z80._r.sp+1)&65535; Z80._r.m=1; },
-
-    DECBC: function() { Z80._r.c=(Z80._r.c-1)&255; if(Z80._r.c==255) Z80._r.b=(Z80._r.b-1)&255; Z80._r.m=1; },
-    DECDE: function() { Z80._r.e=(Z80._r.e-1)&255; if(Z80._r.e==255) Z80._r.d=(Z80._r.d-1)&255; Z80._r.m=1; },
-    DECHL: function() { Z80._r.l=(Z80._r.l-1)&255; if(Z80._r.l==255) Z80._r.h=(Z80._r.h-1)&255; Z80._r.m=1; },
-    DECSP: function() { Z80._r.sp=(Z80._r.sp-1)&65535; Z80._r.m=1; },
-
     /*--- Bit manipulation ---*/
     BIT0b: function() { Z80._r.f&=0x1F; Z80._r.f|=0x20; Z80._r.f=(Z80._r.b&0x01)?0:0x80; Z80._r.m=2; },
     BIT0c: function() { Z80._r.f&=0x1F; Z80._r.f|=0x20; Z80._r.f=(Z80._r.c&0x01)?0:0x80; Z80._r.m=2; },
