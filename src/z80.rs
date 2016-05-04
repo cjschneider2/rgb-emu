@@ -128,20 +128,22 @@ impl Z80 {
     pub fn ld_a_l(&mut self) { self.reg_a = self.reg_l; self.reg_m = 1; self.reg_t = 4;}
     pub fn ld_a_a(&mut self) { self.reg_a = self.reg_a; self.reg_m = 1; self.reg_t = 4;}
     /// (LOAD B, (HL))
+    pub fn ld_b_hl(&mut self) {
+        let addr:u16 = ((self.reg_h as u16) << 8u16) + self.reg_l as u16;
         self.reg_b = self.mmu.borrow_mut().rb(&self, addr);
-        self.reg_m=2; self.reg_t=8;
+        self.reg_m = 2; self.reg_t = 8;
     }
     /// (LOAD C, (HL))
     pub fn ld_c_hl(&mut self) {
         let addr:u16 = ((self.reg_h as u16) << 8u16) + self.reg_l as u16;
         self.reg_c = self.mmu.borrow_mut().rb(&self, addr);
-        self.reg_m=2; self.reg_t=8;
+        self.reg_m = 2; self.reg_t = 8;
     }
     /// (LOAD D, (HL))
     pub fn ld_d_hl(&mut self) {
         let addr:u16 = ((self.reg_h as u16) << 8u16) + self.reg_l as u16;
         self.reg_d = self.mmu.borrow_mut().rb(&self, addr);
-        self.reg_m=2; self.reg_t=8;
+        self.reg_m = 2; self.reg_t = 8;
     }
     /// (LOAD E, (HL))
     pub fn ld_e_hl(&mut self) {
@@ -756,7 +758,7 @@ impl Z80 {
         self.reg_a -= self.reg_b;
         self.reg_f = if self.reg_a < 0 { 0x50} else { 0x40 };
         self.reg_a &= 255;
-        if (self.reg_a == 0) {
+        if self.reg_a == 0 {
             self.reg_f |= 0x80;
         }
         if ((self.reg_a ^ self.reg_b ^ a) & 0x10) != 0 {
@@ -769,7 +771,7 @@ impl Z80 {
         self.reg_a -= self.reg_c;
         self.reg_f = if self.reg_a < 0 { 0x50} else { 0x40 };
         self.reg_a &= 255;
-        if (self.reg_a == 0) {
+        if self.reg_a == 0 {
             self.reg_f |= 0x80;
         }
         if ((self.reg_a ^ self.reg_c ^ a) & 0x10) != 0 {
@@ -782,7 +784,7 @@ impl Z80 {
         self.reg_a -= self.reg_d;
         self.reg_f = if self.reg_a < 0 { 0x50} else { 0x40 };
         self.reg_a &= 255;
-        if (self.reg_a == 0) {
+        if self.reg_a == 0 {
             self.reg_f |= 0x80;
         }
         if ((self.reg_a ^ self.reg_d ^ a) & 0x10) != 0 {
@@ -795,7 +797,7 @@ impl Z80 {
         self.reg_a -= self.reg_e;
         self.reg_f = if self.reg_a < 0 { 0x50} else { 0x40 };
         self.reg_a &= 255;
-        if (self.reg_a == 0) {
+        if self.reg_a == 0 {
             self.reg_f |= 0x80;
         }
         if ((self.reg_a ^ self.reg_e ^ a) & 0x10) != 0 {
@@ -808,7 +810,7 @@ impl Z80 {
         self.reg_a -= self.reg_h;
         self.reg_f = if self.reg_a < 0 { 0x50} else { 0x40 };
         self.reg_a &= 255;
-        if (self.reg_a == 0) {
+        if self.reg_a == 0 {
             self.reg_f |= 0x80;
         }
         if ((self.reg_a ^ self.reg_h ^ a) & 0x10) != 0 {
@@ -821,7 +823,7 @@ impl Z80 {
         self.reg_a -= self.reg_l;
         self.reg_f = if self.reg_a < 0 { 0x50} else { 0x40 };
         self.reg_a &= 255;
-        if (self.reg_a == 0) {
+        if self.reg_a == 0 {
             self.reg_f |= 0x80;
         }
         if ((self.reg_a ^ self.reg_l ^ a) & 0x10) != 0 {
@@ -834,7 +836,7 @@ impl Z80 {
         self.reg_a -= self.reg_a;
         self.reg_f = if self.reg_a < 0 { 0x50} else { 0x40 };
         self.reg_a &= 255;
-        if (self.reg_a == 0) {
+        if self.reg_a == 0 {
             self.reg_f |= 0x80;
         }
         if ((self.reg_a ^ self.reg_a ^ a) & 0x10) != 0 {
@@ -849,7 +851,7 @@ impl Z80 {
         self.reg_pc += 1;
         self.reg_f = if self.reg_a < 0 { 0x50 } else { 0x40 };
         self.reg_a &= 255;
-        if (self.reg_a == 0) {
+        if self.reg_a == 0 {
             self.reg_f |= 0x80;
         }
         if ((self.reg_a ^ m ^ a) & 0x10) != 0 {
@@ -877,7 +879,7 @@ impl Z80 {
         let a = self.reg_a;
         self.reg_a -= self.reg_b;
         self.reg_a -= if (self.reg_f & 0x10) != 0 { 1 } else { 0 };
-        self.reg_f = if (self.reg_a<0) { 0x50 } else { 0x40 };
+        self.reg_f = if self.reg_a < 0 { 0x50 } else { 0x40 };
         self.reg_a &= 255;
         if self.reg_a == 0 {
             self.reg_f |= 0x80;
@@ -891,7 +893,7 @@ impl Z80 {
         let a = self.reg_a;
         self.reg_a -= self.reg_c;
         self.reg_a -= if (self.reg_f & 0x10) != 0 { 1 } else { 0 };
-        self.reg_f = if (self.reg_a<0) { 0x50 } else { 0x40 };
+        self.reg_f = if self.reg_a < 0 { 0x50 } else { 0x40 };
         self.reg_a &= 255;
         if self.reg_a == 0 {
             self.reg_f |= 0x80;
@@ -905,7 +907,7 @@ impl Z80 {
         let a = self.reg_a;
         self.reg_a -= self.reg_d;
         self.reg_a -= if (self.reg_f & 0x10) != 0 { 1 } else { 0 };
-        self.reg_f = if (self.reg_a<0) { 0x50 } else { 0x40 };
+        self.reg_f = if self.reg_a < 0 { 0x50 } else { 0x40 };
         self.reg_a &= 255;
         if self.reg_a == 0 {
             self.reg_f |= 0x80;
@@ -919,7 +921,7 @@ impl Z80 {
         let a = self.reg_a;
         self.reg_a -= self.reg_e;
         self.reg_a -= if (self.reg_f & 0x10) != 0 { 1 } else { 0 };
-        self.reg_f = if (self.reg_a<0) { 0x50 } else { 0x40 };
+        self.reg_f = if self.reg_a < 0 { 0x50 } else { 0x40 };
         self.reg_a &= 255;
         if self.reg_a == 0 {
             self.reg_f |= 0x80;
@@ -933,7 +935,7 @@ impl Z80 {
         let a = self.reg_a;
         self.reg_a -= self.reg_h;
         self.reg_a -= if (self.reg_f & 0x10) != 0 { 1 } else { 0 };
-        self.reg_f = if (self.reg_a<0) { 0x50 } else { 0x40 };
+        self.reg_f = if self.reg_a < 0 { 0x50 } else { 0x40 };
         self.reg_a &= 255;
         if self.reg_a == 0 {
             self.reg_f |= 0x80;
@@ -947,7 +949,7 @@ impl Z80 {
         let a = self.reg_a;
         self.reg_a -= self.reg_l;
         self.reg_a -= if (self.reg_f & 0x10) != 0 { 1 } else { 0 };
-        self.reg_f = if (self.reg_a<0) { 0x50 } else { 0x40 };
+        self.reg_f = if self.reg_a < 0 { 0x50 } else { 0x40 };
         self.reg_a &= 255;
         if self.reg_a == 0 {
             self.reg_f |= 0x80;
@@ -961,7 +963,7 @@ impl Z80 {
         let a = self.reg_a;
         self.reg_a -= self.reg_a;
         self.reg_a -= if (self.reg_f & 0x10) != 0 { 1 } else { 0 };
-        self.reg_f = if (self.reg_a<0) { 0x50 } else { 0x40 };
+        self.reg_f = if self.reg_a < 0 { 0x50 } else { 0x40 };
         self.reg_a &= 255;
         if self.reg_a == 0 {
             self.reg_f |= 0x80;
@@ -1126,11 +1128,11 @@ impl Z80 {
 
     pub fn daa(&mut self) {
         let a = self.reg_a;
-        if ((self.reg_f & 0x20) != 0 || (self.reg_a & 15) > 9) {
+        if (self.reg_f & 0x20) != 0 || (self.reg_a & 15) > 9 {
             self.reg_a += 6;
         }
         self.reg_f &= 0xEF;
-        if ((self.reg_f & 0x20) != 0 || ( a > 0x99)) {
+        if (self.reg_f & 0x20) != 0 || (a > 0x99) {
             self.reg_a += 0x60;
             self.reg_f |= 0x10;
         }
@@ -1346,13 +1348,38 @@ impl Z80 {
         self.reg_f = if self.reg_a != 0 { 0 } else { 0x80 };
         self.reg_m = 1;
     }
-    pub fn inc_hl(&mut self) {
-        let mut i = self.mmu.borrow_mut().rb(&self, (self.reg_h as u16) << 8 + self.reg_l as u16) + 1;
-        i &= 255;
-        self.mmu.borrow_mut().wb(&self, (self.reg_h as u16) << 8 + self.reg_l as u16,i);
-        self.reg_f = if i != 0 { 0 } else { 0x80 };
-        self.reg_m = 3;
+    pub fn inc_bc(&mut self) {
+        self.reg_c =(self.reg_c + 1) & 255;
+        if(!self.reg_c) == 0 {
+            self.reg_b = (self.reg_b + 1) & 255;
+        }
+        self.reg_m = 1;
     }
+    pub fn inc_de(&mut self) {
+        self.reg_e =(self.reg_e + 1) & 255;
+        if(!self.reg_e) == 0 {
+            self.reg_d = (self.reg_d + 1) & 255;
+        }
+        self.reg_m = 1;
+    }
+    pub fn inc_sp(&mut self) {
+        self.reg_sp = (self.reg_sp + 1) & 65535;
+        self.reg_m=1;
+    }
+    pub fn inc_hl(&mut self) {
+        self.reg_l =(self.reg_l + 1) & 255;
+        if(!self.reg_l) == 0 {
+            self.reg_h = (self.reg_h + 1) & 255;
+        }
+        self.reg_m = 1;
+    }
+    //pub fn inc_hl(&mut self) {
+    //    let mut i = self.mmu.borrow_mut().rb(&self, (self.reg_h as u16) << 8 + self.reg_l as u16) + 1;
+    //    i &= 255;
+    //    self.mmu.borrow_mut().wb(&self, (self.reg_h as u16) << 8 + self.reg_l as u16,i);
+    //    self.reg_f = if i != 0 { 0 } else { 0x80 };
+    //    self.reg_m = 3;
+    //}
 
     pub fn dec_b(&mut self) {
         self.reg_b -= 1;
@@ -1396,40 +1423,6 @@ impl Z80 {
         self.reg_f = if self.reg_a != 0 { 0 } else { 0x80 };
         self.reg_m = 1;
     }
-    pub fn dec_hl(&mut self) {
-        let mut i = self.mmu.borrow_mut().rb(&self, (self.reg_h as u16) << 8 + self.reg_l as u 16) - 1;
-        i &= 255;
-        self.mmu.borrow_mut().wb(&self, (self.reg_h as u16) << 8 + self.reg_l as u16, i);
-        self.reg_f = if i != 0 { 0 } else { 0x80 };
-        self.reg_m = 3;
-    }
-
-    pub fn inc_bc(&mut self) {
-        self.reg_c =(self.reg_c + 1) & 255;
-        if(!self.reg_c) == 0 {
-            self.reg_b = (self.reg_b + 1) & 255;
-        }
-        self.reg_m = 1;
-    }
-    pub fn inc_de(&mut self) {
-        self.reg_e =(self.reg_e + 1) & 255;
-        if(!self.reg_e) == 0 {
-            self.reg_d = (self.reg_d + 1) & 255;
-        }
-        self.reg_m = 1;
-    }
-    pub fn inc_hl(&mut self) {
-        self.reg_l =(self.reg_l + 1) & 255;
-        if(!self.reg_l) == 0 {
-            self.reg_h = (self.reg_h + 1) & 255;
-        }
-        self.reg_m = 1;
-    }
-    pub fn inc_sp(&mut self) {
-        self.reg_sp = (self.reg_sp + 1) & 65535;
-        self.reg_m=1;
-    }
-
     pub fn dec_bc(&mut self) {
         self.reg_c = (self.reg_c - 1) & 255;
         if self.reg_c == 255 {
@@ -1444,6 +1437,10 @@ impl Z80 {
         }
         self.reg_m = 1;
     }
+    pub fn dec_sp(&mut self) {
+        self.reg_sp = (self.reg_sp - 1) & 65535;
+        self.reg_m = 1;
+    }
     pub fn dec_hl(&mut self) {
         self.reg_l = (self.reg_l - 1) & 255;
         if self.reg_l == 255 {
@@ -1451,10 +1448,13 @@ impl Z80 {
         }
         self.reg_m = 1;
     }
-    pub fn dec_sp(&mut self) {
-        self.reg_sp = (self.reg_sp - 1) & 65535;
-        self.reg_m = 1;
-    }
+    //pub fn dec_hl(&mut self) {
+    //    let mut i = self.mmu.borrow_mut().rb(&self, (self.reg_h as u16) << 8 + self.reg_l as u16) - 1;
+    //    i &= 255;
+    //    self.mmu.borrow_mut().wb(&self, (self.reg_h as u16) << 8 + self.reg_l as u16, i);
+    //    self.reg_f = if i != 0 { 0 } else { 0x80 };
+    //    self.reg_m = 3;
+    //}
 
 /*
     /*--- Bit manipulation ---*/
@@ -1965,7 +1965,6 @@ impl Z80 {
         self.reg_sp += 1;
         self.reg_m = 3; self.reg_t = 12;
     }
-
 }
 
 /// A defined type for our ops?
