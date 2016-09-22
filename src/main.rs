@@ -9,7 +9,7 @@ use std::rc::Rc;
 use gtk::prelude::*;
 use gtk::{Window, WindowType};
 
-use z80::Z80;
+use cpu::CPU;
 use mmu::MMU;
 
 fn main() {
