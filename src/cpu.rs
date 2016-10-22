@@ -17,7 +17,8 @@ use mmu::MMU;
 
 // Register types
 // NOTE: C0 is really (0xFF00 + C) == (C)
-enum Register {
+#[derive(Debug)]
+pub enum Register {
     // 8-bit registers
     A, B, D, H, F, C, C0, E, L,
     // 16-bit registers
@@ -29,7 +30,8 @@ enum Register {
 
 
 // Instruction List
-enum Instruction {
+#[derive(Debug)]
+pub enum Instruction {
     ExtInstr, // Extended Instruction Set use byte (0xCB)
     LD   (Register, Register),
     LDD  (Register, Register),
@@ -66,7 +68,7 @@ enum Instruction {
     JPZ  (Register),
     JPNC (Register),
     JPC  (Register),
-    JPHL, 
+    JPHL,
     JR   (Register),
     JRNZ (Register),
     JRZ  (Register),
@@ -134,7 +136,7 @@ impl CPU {
     }
 
     /// Dispatches an instruction
-    fn decode(byte: u8) -> Instruction {
+    pub fn decode(byte: u8) -> Instruction {
         use self::Instruction as I;
         use self::Register::BYTE as BYTE;
         use self::Register::WORD as WORD;
@@ -474,6 +476,8 @@ impl CPU {
             // RETI : pop two bytes from stack and jump to that address
             //      : while also enabling interrupts.
             0xD9 => I::RETI,
+            // ExtInstr : Marker that the next byte is an extended instruction
+            0xCB => I::ExtInstr,
             _ => {
                 println!("Decoded invalid instruction: 0x{:X}", byte);
                 I::NOP
@@ -483,7 +487,7 @@ impl CPU {
 
     /// The CPU features some extended instructions which are signaled by the
     /// 0xCB instruction which was unused on the 8080.
-    fn decode_extended(byte: u8) -> Instruction {
+    pub fn decode_extended(byte: u8) -> Instruction {
         use self::Instruction as I;
         use self::Register::BYTE as BYTE;
         use self::Register::WORD as WORD;

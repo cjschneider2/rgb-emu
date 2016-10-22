@@ -137,7 +137,7 @@ impl MMU {
             rom: Vec::<u8>::new(),
             cartridge_type: None,
             mbc: 0, // TODO: ???
-            rom_offset: 0x4000,
+            rom_offset: 0x0, // 0x4000,
             ram_offset: 0x0,
             eram: Vec::<u8>::new(),
             wram: Vec::<u8>::new(),
@@ -148,7 +148,7 @@ impl MMU {
         }
     }
 
-    pub fn load(&mut self, file: File) {
+    pub fn load_file(&mut self, file: File) {
         self.rom = file.bytes()
                        .map(|r: Result<u8, _>| r.unwrap())
                        .collect();
@@ -156,6 +156,18 @@ impl MMU {
             Some(val) => Some(*val),
             None => None,
         }
+    }
+
+    pub fn load_bytes(&mut self, rom: &[u8]) {
+        self.rom = rom.to_owned();
+    }
+
+    pub fn get_byte_at_offset(&self) -> u8 {
+        *self.rom.get(self.rom_offset as usize).unwrap()
+    }
+
+    pub fn incr_rom(&mut self) {
+        self.rom_offset += 1;
     }
 
     /// Read byte
