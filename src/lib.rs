@@ -55,8 +55,12 @@ pub mod emulator_context {
 
         pub fn step(&mut self) {
             use cpu::Instruction as I;
+            use cpu::Register as Reg;
+            use cpu::Register::BYTE as BYTE;
+            use cpu::Register::WORD as WORD;
+
             // Start instruction fetch
-            {
+            let inst = {
                 // get the next instruction byte
                 let byte = self.mmu.get_byte_at_offset();
                 self.mmu.incr_rom();
@@ -77,8 +81,20 @@ pub mod emulator_context {
                         inst
                     }
                 };
-            } // end instruction fetch
+                inst
+            };// end instruction fetch
             // find out if we need to load a byte/word for the instr.
+            let data = match inst {
+                I::LD(_, BYTE) |
+                I::CP(BYTE)
+                => {
+                    let byte = self.mmu.get_byte_at_offset();
+                    self.mmu.incr_rom();
+                    println!("Register Data Load: 0x{:02x}", byte);
+                    Some(byte)
+                }
+                _ => { None },
+            };
         }
     }
 }
