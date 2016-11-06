@@ -166,6 +166,10 @@ impl MMU {
         *self.rom.get(self.rom_offset as usize).unwrap()
     }
 
+    pub fn get_offset(&self) -> u16 {
+        self.rom_offset
+    }
+
     pub fn incr_rom(&mut self) {
         self.rom_offset += 1;
     }

@@ -95,9 +95,9 @@ pub enum Instruction {
     SLA  (Register),
     SRA  (Register),
     SRL  (Register),
-    BIT  (Register, Register),
-    SET  (Register, Register),
-    RES  (Register, Register),
+    BIT  (u8, Register),
+    SET  (u8, Register),
+    RES  (u8, Register),
 }
 
 pub struct CPU {
@@ -110,14 +110,15 @@ pub struct CPU {
     reg_c:   u8,
     reg_d:   u8,
     reg_e:   u8,
+    reg_f:   u8,
     reg_h:   u8,
     reg_l:   u8,
-    reg_f:   u8,
     reg_pc:  u16,
     reg_sp:  u16,
-    reg_m:   i16,
-    reg_t:   i16,
-    reg_ime: u16,
+    sub_flag: bool,
+    zero_flag: bool,
+    carry_flag: bool,
+    half_carry_flag: bool,
 }
 
 impl CPU {
@@ -129,9 +130,9 @@ impl CPU {
             reg_c:   0,     reg_d:   0,
             reg_e:   0,     reg_h:   0,
             reg_l:   0,     reg_f:   0,
-            reg_pc:  0,     reg_sp:  0,
-            reg_m:   0,     reg_t:   0,
-            reg_ime: 0,
+            reg_pc:  0,     reg_sp:  0xFFFE,
+            sub_flag: false, zero_flag: false,
+            carry_flag: false, half_carry_flag: false,
         }
     }
 
@@ -362,23 +363,23 @@ impl CPU {
             0xBE => I::CP(Reg::HL),
             0xFE => I::CP(BYTE),
             // INC n : Increment Register n
-            0x3C => I::CP(Reg::A),
-            0x04 => I::CP(Reg::B),
-            0x0C => I::CP(Reg::C),
-            0x14 => I::CP(Reg::D),
-            0x1C => I::CP(Reg::E),
-            0x24 => I::CP(Reg::H),
-            0x2C => I::CP(Reg::L),
-            0x34 => I::CP(Reg::HL),
+            0x3C => I::INC(Reg::A),
+            0x04 => I::INC(Reg::B),
+            0x0C => I::INC(Reg::C),
+            0x14 => I::INC(Reg::D),
+            0x1C => I::INC(Reg::E),
+            0x24 => I::INC(Reg::H),
+            0x2C => I::INC(Reg::L),
+            0x34 => I::INC(Reg::HL),
             // DEC n : Decrement Register n
-            0x3D => I::CP(Reg::A),
-            0x05 => I::CP(Reg::B),
-            0x0D => I::CP(Reg::C),
-            0x15 => I::CP(Reg::D),
-            0x1D => I::CP(Reg::E),
-            0x25 => I::CP(Reg::H),
-            0x2D => I::CP(Reg::L),
-            0x35 => I::CP(Reg::HL),
+            0x3D => I::DEC(Reg::A),
+            0x05 => I::DEC(Reg::B),
+            0x0D => I::DEC(Reg::C),
+            0x15 => I::DEC(Reg::D),
+            0x1D => I::DEC(Reg::E),
+            0x25 => I::DEC(Reg::H),
+            0x2D => I::DEC(Reg::L),
+            0x35 => I::DEC(Reg::HL),
             // 16-Bit ALU -----------------------------------------------------
             // ADD HL, n : Add n to HL
             0x09 => I::ADD(Reg::HL, Reg::BC),
@@ -441,10 +442,10 @@ impl CPU {
             0x18 => I::JR(BYTE),
             // JPCC nn : add n to value and jump to address if specified
             //         : condition is true:
-            0x20 => I::JRNZ(WORD), // if Z flag is low
-            0x28 => I::JRZ(WORD),  // if Z flag is high
-            0x30 => I::JRNC(WORD), // if C flag is low
-            0x38 => I::JRC(WORD),  // if C flag is high
+            0x20 => I::JRNZ(BYTE), // if Z flag is low
+            0x28 => I::JRZ(BYTE),  // if Z flag is high
+            0x30 => I::JRNC(BYTE), // if C flag is low
+            0x38 => I::JRC(BYTE),  // if C flag is high
             // Calls ----------------------------------------------------------
             // CALL nn : Push address of next address onto stack and then jump
             //         : to that address.
@@ -568,33 +569,222 @@ impl CPU {
             0x3D => I::SRL(Reg::L),
             0x3E => I::SRL(Reg::HL),
             // bit opcodes ----------------------------------------------------
-            // BIT b, r : test bit `b` in register r
-            0x47 => I::BIT(BYTE, Reg::A),
-            0x40 => I::BIT(BYTE, Reg::B),
-            0x41 => I::BIT(BYTE, Reg::C),
-            0x42 => I::BIT(BYTE, Reg::D),
-            0x43 => I::BIT(BYTE, Reg::E),
-            0x44 => I::BIT(BYTE, Reg::H),
-            0x45 => I::BIT(BYTE, Reg::L),
-            0x46 => I::BIT(BYTE, Reg::HL),
-            // SET b, r : Set bit `b` in register r
-            0xC7 => I::SET(BYTE, Reg::A),
-            0xC0 => I::SET(BYTE, Reg::B),
-            0xC1 => I::SET(BYTE, Reg::C),
-            0xC2 => I::SET(BYTE, Reg::D),
-            0xC3 => I::SET(BYTE, Reg::E),
-            0xC4 => I::SET(BYTE, Reg::H),
-            0xC5 => I::SET(BYTE, Reg::L),
-            0xC6 => I::SET(BYTE, Reg::HL),
-            // RES b, r : Reset bit `b` in register r
-            0x87 => I::RES(BYTE, Reg::A),
-            0x80 => I::RES(BYTE, Reg::B),
-            0x81 => I::RES(BYTE, Reg::C),
-            0x82 => I::RES(BYTE, Reg::D),
-            0x83 => I::RES(BYTE, Reg::E),
-            0x84 => I::RES(BYTE, Reg::H),
-            0x85 => I::RES(BYTE, Reg::L),
-            0x86 => I::RES(BYTE, Reg::HL),
+            // BIT b, r : test bit `0` in register r
+            0x47 => I::BIT(0, Reg::A),
+            0x40 => I::BIT(0, Reg::B),
+            0x41 => I::BIT(0, Reg::C),
+            0x42 => I::BIT(0, Reg::D),
+            0x43 => I::BIT(0, Reg::E),
+            0x44 => I::BIT(0, Reg::H),
+            0x45 => I::BIT(0, Reg::L),
+            0x46 => I::BIT(0, Reg::HL),
+            // BIT b, r : test bit `1` in register r
+            0x4F => I::BIT(1, Reg::A),
+            0x48 => I::BIT(1, Reg::B),
+            0x49 => I::BIT(1, Reg::C),
+            0x4A => I::BIT(1, Reg::D),
+            0x4B => I::BIT(1, Reg::E),
+            0x4C => I::BIT(1, Reg::H),
+            0x4D => I::BIT(1, Reg::L),
+            0x4E => I::BIT(1, Reg::HL),
+            // BIT b, r : test bit `2` in register r
+            0x57 => I::BIT(2, Reg::A),
+            0x50 => I::BIT(2, Reg::B),
+            0x51 => I::BIT(2, Reg::C),
+            0x52 => I::BIT(2, Reg::D),
+            0x53 => I::BIT(2, Reg::E),
+            0x54 => I::BIT(2, Reg::H),
+            0x55 => I::BIT(2, Reg::L),
+            0x56 => I::BIT(2, Reg::HL),
+            // BIT b, r : test bit `3` in register r
+            0x5F => I::BIT(3, Reg::A),
+            0x58 => I::BIT(3, Reg::B),
+            0x59 => I::BIT(3, Reg::C),
+            0x5A => I::BIT(3, Reg::D),
+            0x5B => I::BIT(3, Reg::E),
+            0x5C => I::BIT(3, Reg::H),
+            0x5D => I::BIT(3, Reg::L),
+            0x5E => I::BIT(3, Reg::HL),
+            // BIT b, r : test bit `4` in register r
+            0x67 => I::BIT(4, Reg::A),
+            0x60 => I::BIT(4, Reg::B),
+            0x61 => I::BIT(4, Reg::C),
+            0x62 => I::BIT(4, Reg::D),
+            0x63 => I::BIT(4, Reg::E),
+            0x64 => I::BIT(4, Reg::H),
+            0x65 => I::BIT(4, Reg::L),
+            0x66 => I::BIT(4, Reg::HL),
+            // BIT b, r : test bit `5` in register r
+            0x6F => I::BIT(5, Reg::A),
+            0x68 => I::BIT(5, Reg::B),
+            0x69 => I::BIT(5, Reg::C),
+            0x6A => I::BIT(5, Reg::D),
+            0x6B => I::BIT(5, Reg::E),
+            0x6C => I::BIT(5, Reg::H),
+            0x6D => I::BIT(5, Reg::L),
+            0x6E => I::BIT(5, Reg::HL),
+            // BIT b, r : test bit `6` in register r
+            0x77 => I::BIT(6, Reg::A),
+            0x70 => I::BIT(6, Reg::B),
+            0x71 => I::BIT(6, Reg::C),
+            0x72 => I::BIT(6, Reg::D),
+            0x73 => I::BIT(6, Reg::E),
+            0x74 => I::BIT(6, Reg::H),
+            0x75 => I::BIT(6, Reg::L),
+            0x76 => I::BIT(6, Reg::HL),
+            // BIT b, r : test bit `7` in register r
+            0x7F => I::BIT(7, Reg::A),
+            0x78 => I::BIT(7, Reg::B),
+            0x79 => I::BIT(7, Reg::C),
+            0x7A => I::BIT(7, Reg::D),
+            0x7B => I::BIT(7, Reg::E),
+            0x7C => I::BIT(7, Reg::H),
+            0x7D => I::BIT(7, Reg::L),
+            0x7E => I::BIT(7, Reg::HL),
+            // RES b, r : reset bit `0` in register r
+            0x87 => I::RES(0, Reg::A),
+            0x80 => I::RES(0, Reg::B),
+            0x81 => I::RES(0, Reg::C),
+            0x82 => I::RES(0, Reg::D),
+            0x83 => I::RES(0, Reg::E),
+            0x84 => I::RES(0, Reg::H),
+            0x85 => I::RES(0, Reg::L),
+            0x86 => I::RES(0, Reg::HL),
+            // RES b, r : reset bit `1` in register r
+            0x8F => I::RES(1, Reg::A),
+            0x88 => I::RES(1, Reg::B),
+            0x89 => I::RES(1, Reg::C),
+            0x8A => I::RES(1, Reg::D),
+            0x8B => I::RES(1, Reg::E),
+            0x8C => I::RES(1, Reg::H),
+            0x8D => I::RES(1, Reg::L),
+            0x8E => I::RES(1, Reg::HL),
+            // RES b, r : reset bit `2` in register r
+            0x97 => I::RES(2, Reg::A),
+            0x90 => I::RES(2, Reg::B),
+            0x91 => I::RES(2, Reg::C),
+            0x92 => I::RES(2, Reg::D),
+            0x93 => I::RES(2, Reg::E),
+            0x94 => I::RES(2, Reg::H),
+            0x95 => I::RES(2, Reg::L),
+            0x96 => I::RES(2, Reg::HL),
+            // RES b, r : reset bit `3` in register r
+            0x9F => I::RES(3, Reg::A),
+            0x98 => I::RES(3, Reg::B),
+            0x99 => I::RES(3, Reg::C),
+            0x9A => I::RES(3, Reg::D),
+            0x9B => I::RES(3, Reg::E),
+            0x9C => I::RES(3, Reg::H),
+            0x9D => I::RES(3, Reg::L),
+            0x9E => I::RES(3, Reg::HL),
+            // RES b, r : reset bit `4` in register r
+            0xA7 => I::RES(4, Reg::A),
+            0xA0 => I::RES(4, Reg::B),
+            0xA1 => I::RES(4, Reg::C),
+            0xA2 => I::RES(4, Reg::D),
+            0xA3 => I::RES(4, Reg::E),
+            0xA4 => I::RES(4, Reg::H),
+            0xA5 => I::RES(4, Reg::L),
+            0xA6 => I::RES(4, Reg::HL),
+            // RES b, r : reset bit `5` in register r
+            0xAF => I::RES(5, Reg::A),
+            0xA8 => I::RES(5, Reg::B),
+            0xA9 => I::RES(5, Reg::C),
+            0xAA => I::RES(5, Reg::D),
+            0xAB => I::RES(5, Reg::E),
+            0xAC => I::RES(5, Reg::H),
+            0xAD => I::RES(5, Reg::L),
+            0xAE => I::RES(5, Reg::HL),
+            // RES b, r : reset bit `6` in register r
+            0xB7 => I::RES(6, Reg::A),
+            0xB0 => I::RES(6, Reg::B),
+            0xB1 => I::RES(6, Reg::C),
+            0xB2 => I::RES(6, Reg::D),
+            0xB3 => I::RES(6, Reg::E),
+            0xB4 => I::RES(6, Reg::H),
+            0xB5 => I::RES(6, Reg::L),
+            0xB6 => I::RES(6, Reg::HL),
+            // RES b, r : reset bit `7` in register r
+            0xBF => I::RES(7, Reg::A),
+            0xB8 => I::RES(7, Reg::B),
+            0xB9 => I::RES(7, Reg::C),
+            0xBA => I::RES(7, Reg::D),
+            0xBB => I::RES(7, Reg::E),
+            0xBC => I::RES(7, Reg::H),
+            0xBD => I::RES(7, Reg::L),
+            0xBE => I::RES(7, Reg::HL),
+            // SET b, r : set bit `0` in register r
+            0xC7 => I::SET(0, Reg::A),
+            0xC0 => I::SET(0, Reg::B),
+            0xC1 => I::SET(0, Reg::C),
+            0xC2 => I::SET(0, Reg::D),
+            0xC3 => I::SET(0, Reg::E),
+            0xC4 => I::SET(0, Reg::H),
+            0xC5 => I::SET(0, Reg::L),
+            0xC6 => I::SET(0, Reg::HL),
+            // SET b, r : set bit `1` in register r
+            0xCF => I::SET(1, Reg::A),
+            0xC8 => I::SET(1, Reg::B),
+            0xC9 => I::SET(1, Reg::C),
+            0xCA => I::SET(1, Reg::D),
+            0xCB => I::SET(1, Reg::E),
+            0xCC => I::SET(1, Reg::H),
+            0xCD => I::SET(1, Reg::L),
+            0xCE => I::SET(1, Reg::HL),
+            // SET b, r : set bit `2` in register r
+            0xD7 => I::SET(2, Reg::A),
+            0xD0 => I::SET(2, Reg::B),
+            0xD1 => I::SET(2, Reg::C),
+            0xD2 => I::SET(2, Reg::D),
+            0xD3 => I::SET(2, Reg::E),
+            0xD4 => I::SET(2, Reg::H),
+            0xD5 => I::SET(2, Reg::L),
+            0xD6 => I::SET(2, Reg::HL),
+            // SET b, r : set bit `3` in register r
+            0xDF => I::SET(3, Reg::A),
+            0xD8 => I::SET(3, Reg::B),
+            0xD9 => I::SET(3, Reg::C),
+            0xDA => I::SET(3, Reg::D),
+            0xDB => I::SET(3, Reg::E),
+            0xDC => I::SET(3, Reg::H),
+            0xDD => I::SET(3, Reg::L),
+            0xDE => I::SET(3, Reg::HL),
+            // SET b, r : set bit `4` in register r
+            0xE7 => I::SET(4, Reg::A),
+            0xE0 => I::SET(4, Reg::B),
+            0xE1 => I::SET(4, Reg::C),
+            0xE2 => I::SET(4, Reg::D),
+            0xE3 => I::SET(4, Reg::E),
+            0xE4 => I::SET(4, Reg::H),
+            0xE5 => I::SET(4, Reg::L),
+            0xE6 => I::SET(4, Reg::HL),
+            // SET b, r : set bit `5` in register r
+            0xEF => I::SET(5, Reg::A),
+            0xE8 => I::SET(5, Reg::B),
+            0xE9 => I::SET(5, Reg::C),
+            0xEA => I::SET(5, Reg::D),
+            0xEB => I::SET(5, Reg::E),
+            0xEC => I::SET(5, Reg::H),
+            0xED => I::SET(5, Reg::L),
+            0xEE => I::SET(5, Reg::HL),
+            // SET b, r : set bit `6` in register r
+            0xF7 => I::SET(6, Reg::A),
+            0xF0 => I::SET(6, Reg::B),
+            0xF1 => I::SET(6, Reg::C),
+            0xF2 => I::SET(6, Reg::D),
+            0xF3 => I::SET(6, Reg::E),
+            0xF4 => I::SET(6, Reg::H),
+            0xF5 => I::SET(6, Reg::L),
+            0xF6 => I::SET(6, Reg::HL),
+            // SET b, r : set bit `7` in register r
+            0xFF => I::SET(7, Reg::A),
+            0xF8 => I::SET(7, Reg::B),
+            0xF9 => I::SET(7, Reg::C),
+            0xFA => I::SET(7, Reg::D),
+            0xFB => I::SET(7, Reg::E),
+            0xFC => I::SET(7, Reg::H),
+            0xFD => I::SET(7, Reg::L),
+            0xFE => I::SET(7, Reg::HL),
             _ => {
                 println!("Decoded invalid extended instruction: 0x{:X}", byte);
                 I::NOP
@@ -607,25 +797,36 @@ impl CPU {
 
     /// Resets processor state
     fn reset(&mut self) {
-        self.halt = false; self.stop = false;
         self.clock_m = 0.0; self.clock_t = 0.0;
         self.reg_a =  0; self.reg_b =  0; self.reg_c =  0;
         self.reg_d =  0; self.reg_e =  0; self.reg_h =  0;
         self.reg_l =  0; self.reg_f =  0; self.reg_pc = 0;
-        self.reg_sp = 0; self.reg_m =  0; self.reg_t =  0;
-        self.reg_ime = 0;
+        self.reg_sp = 0;
+        self.halt = false; self.stop = false;
+        self.zero_flag = false; self.sub_flag = false;
+        self.carry_flag = false; self.half_carry_flag = false;
     }
 
     // control functions
     /// (NOP): No-operation
-    fn nop(&mut self) { self.reg_m = 1; self.reg_t = 4; }
+    fn nop(&mut self) {
+        unimplemented!();
+    }
     /// (HALT): halt the processor
-    fn halt(&mut self) { self.halt = true; self.reg_m = 1; }
+    fn halt(&mut self) {
+        unimplemented!();
+    }
     /// (DI): TODO: ???
-    fn di(&mut self) { self.reg_ime = 0; self.reg_m = 1; }
+    fn di(&mut self) {
+        unimplemented!();
+    }
     /// (EI): TODO: ???
-    fn ei(&mut self) { self.reg_ime = 1; self.reg_m = 1; }
+    fn ei(&mut self) {
+        unimplemented!();
+    }
     /// (UNDEF): Undefined operation
-    fn undef(&mut self) { unreachable!(); }
+    fn undef(&mut self) {
+        unreachable!();
+    }
 
 }

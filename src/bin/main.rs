@@ -34,7 +34,7 @@ fn main () {
     // Run the emu with the rom data
     let _ = state.load_bytes(&boot_rom);
 
-    for _ in 0..50 {
+    for _ in 0..100 {
         state.step();
     }
 }

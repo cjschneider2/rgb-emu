@@ -60,6 +60,7 @@ pub mod emulator_context {
             use cpu::Register::WORD as WORD;
 
             // Start instruction fetch
+            let inst_off = self.mmu.get_offset();
             let inst = {
                 // get the next instruction byte
                 let byte = self.mmu.get_byte_at_offset();
@@ -72,29 +73,71 @@ pub mod emulator_context {
                         self.mmu.incr_rom();
                         // and decode the extended instr
                         let _inst = cpu::CPU::decode_extended(byte);
-                        println!("0x{:02x}\t{:?}\t\t(extended)", byte, _inst);
+                        //println!("0x{:02x}\t{:?}\t\t(extended)", byte, _inst);
                         _inst
 
                     },
                     inst => {
-                        println!("0x{:02x}\t{:?}", byte, inst);
+                        //println!("0x{:02x}\t{:?}", byte, inst);
                         inst
                     }
                 };
                 inst
             };// end instruction fetch
             // find out if we need to load a byte/word for the instr.
+            #[derive(Debug)]
+            enum RegData {
+                None,
+                Byte(u8),
+                Word(u16),
+            }
             let data = match inst {
-                I::LD(_, BYTE) |
+                I::ADC(_, BYTE) |
+                I::AND(BYTE)    |
+                I::LD(_, BYTE)  |
+                I::LD(BYTE, _)  |
+                I::LDH(BYTE, _) |
+                I::LDH(_, BYTE) |
+                I::JR(BYTE)     |
+                I::JRNZ(BYTE)   |
+                I::JRZ(BYTE)    |
+                I::JRNC(BYTE)   |
+                I::JRC(BYTE)    |
                 I::CP(BYTE)
+                    => {
+                        let byte = self.mmu.get_byte_at_offset();
+                        self.mmu.incr_rom();
+                        //println!("Register Data Load: 0x{:02x}", byte);
+                        RegData::Byte(byte)
+                    }
+                I::LD(_, WORD) |
+                I::LD(WORD, _) |
+                I::CP(WORD)    |
+                I::CALL(WORD)  |
+                I::CALLZ(WORD) |
+                I::CALLC(WORD) |
+                I::RETC(WORD)
                 => {
-                    let byte = self.mmu.get_byte_at_offset();
+                    let l_byte = self.mmu.get_byte_at_offset() as u16;
                     self.mmu.incr_rom();
-                    println!("Register Data Load: 0x{:02x}", byte);
-                    Some(byte)
+                    let h_byte = self.mmu.get_byte_at_offset() as u16;
+                    self.mmu.incr_rom();
+                    //println!("Register Data Load: 0x{:02x} 0x{:02x}", l_byte, h_byte);
+                    RegData::Word((h_byte << 8) + l_byte)
                 }
-                _ => { None },
+                _ => { RegData::None },
             };
+            match data {
+                RegData::Byte(data) => {
+                    println!("0x{:04x}: {:?}, 0x{:02x}", inst_off, inst, data);
+                },
+                RegData::Word(data) => {
+                    println!("0x{:04x}: {:?}, 0x{:04x}", inst_off, inst, data);
+                },
+                RegData::None => {
+                    println!("0x{:04x}: {:?}", inst_off, inst);
+                }
+            }
         }
     }
 }
