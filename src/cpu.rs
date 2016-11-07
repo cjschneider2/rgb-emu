@@ -814,6 +814,18 @@ impl CPU {
         self.carry_flag = false; self.half_carry_flag = false;
     }
 
+    /*
+     * INSTRUCTIONS
+     */
+
+    /// Load(register, word)
+    pub fn ld_r_w(&mut self, reg: Register, data: u16) {
+        match reg {
+            Register::SP => { self.reg_sp = data; },
+            _ => { unreachable!(); }
+        }
+    }
+
     // control functions
     /// (NOP): No-operation
     fn nop(&mut self) {

@@ -56,6 +56,7 @@ pub mod emulator_context {
 
         pub fn step(&mut self) {
             use cpu::Instruction as I;
+            use cpu::Register as R;
             use cpu::Register::BYTE as BYTE;
             use cpu::Register::WORD as WORD;
 
@@ -132,6 +133,11 @@ pub mod emulator_context {
             }
 
             // Start Execute
+            match inst {
+                I::LD(reg, WORD) => { self.cpu.ld_r_w(reg, data); self.cycles += 12;}
+                _ => unimplemented!();
+            }
+            // End Execute
         }
     }
 }
