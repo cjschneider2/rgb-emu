@@ -120,22 +120,26 @@ pub mod emulator_context {
             }; // End Decode
 
             // Debug: print instruction
-            match data {
+            let data: u16 = match data {
                 RegData::Byte(data) => {
                     println!("0x{:04x}: {:?}, 0x{:02x}", inst_off, inst, data);
+                    data as u16
                 },
                 RegData::Word(data) => {
                     println!("0x{:04x}: {:?}, 0x{:04x}", inst_off, inst, data);
+                    data
                 },
                 RegData::None => {
                     println!("0x{:04x}: {:?}", inst_off, inst);
+                    0
                 }
-            }
+            };
 
             // Start Execute
             match inst {
-                I::LD(reg, WORD) => { self.cpu.ld_r_w(reg, data); self.cycles += 12;}
-                _ => unimplemented!();
+                I::LD(reg, WORD) => { self.cpu.ld_r_w(reg, data); self.cycles += 12; },
+                I::XOR(reg) => { self.xor_r(reg); self.cycles += 8; }
+                _ => unimplemented!()
             }
             // End Execute
         }

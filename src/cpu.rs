@@ -822,6 +822,18 @@ impl CPU {
     pub fn ld_r_w(&mut self, reg: Register, data: u16) {
         match reg {
             Register::SP => { self.reg_sp = data; },
+            Register::HL => {
+                self.reg_h = ((data & 0xFF00) >> 8) as u8;
+                self.reg_l = (data & 0x00FF) as u8;
+            },
+            Register::BC => {
+                self.reg_b = ((data & 0xFF00) >> 8) as u8;
+                self.reg_c = (data & 0x00FF) as u8;
+            },
+            Register::DE => {
+                self.reg_d = ((data & 0xFF00) >> 8) as u8;
+                self.reg_e = (data & 0x00FF) as u8;
+            },
             _ => { unreachable!(); }
         }
     }
