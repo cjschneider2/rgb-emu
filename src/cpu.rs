@@ -792,6 +792,13 @@ impl CPU {
         }
     }
 
+    /// Returns the next instruction and increments the program counter
+    pub fn p_fetch(&mut self, mmu: &MMU) -> u8 {
+        let byte = mmu.rb(self, self.reg_pc);
+        self.reg_pc += 1;
+        byte
+    }
+
     /// Returns the value of the CPU's program counter
     pub fn get_pc(&self) -> u16 { self.reg_pc }
 

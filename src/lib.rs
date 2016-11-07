@@ -31,7 +31,6 @@ pub fn version() -> u32 {
 pub mod emulator_context {
     use ::cpu;
     use ::mmu;
-    use ::rgb_error;
 
     /// The Emulator context holds all of pieces to the running state of an
     // emulator.
@@ -55,36 +54,30 @@ pub mod emulator_context {
 
         pub fn step(&mut self) {
             use cpu::Instruction as I;
-            use cpu::Register as Reg;
             use cpu::Register::BYTE as BYTE;
             use cpu::Register::WORD as WORD;
 
             // Start instruction fetch
-            let inst_off = self.mmu.get_offset();
+            let inst_off = self.cpu.get_pc();
             let inst = {
                 // get the next instruction byte
-                let byte = self.mmu.get_byte_at_offset();
-                self.mmu.incr_rom();
+                let byte = self.cpu.p_fetch(&self.mmu);
                 // Decode the instruction
                 let inst = match cpu::CPU::decode(byte) {
                     I::ExtInstr => {
                         // load another byte
-                        let byte = self.mmu.get_byte_at_offset();
-                        self.mmu.incr_rom();
+                        let byte = self.cpu.p_fetch(&self.mmu);
                         // and decode the extended instr
                         let _inst = cpu::CPU::decode_extended(byte);
-                        //println!("0x{:02x}\t{:?}\t\t(extended)", byte, _inst);
                         _inst
 
                     },
-                    inst => {
-                        //println!("0x{:02x}\t{:?}", byte, inst);
-                        inst
-                    }
+                    inst => { inst }
                 };
                 inst
             };// end instruction fetch
-            // find out if we need to load a byte/word for the instr.
+
+            // Start Decode: find out if we need to load a byte/word for the instr.
             #[derive(Debug)]
             enum RegData {
                 None,
@@ -105,9 +98,7 @@ pub mod emulator_context {
                 I::JRC(BYTE)    |
                 I::CP(BYTE)
                     => {
-                        let byte = self.mmu.get_byte_at_offset();
-                        self.mmu.incr_rom();
-                        //println!("Register Data Load: 0x{:02x}", byte);
+                        let byte = self.cpu.p_fetch(&self.mmu);
                         RegData::Byte(byte)
                     }
                 I::LD(_, WORD) |
@@ -117,16 +108,15 @@ pub mod emulator_context {
                 I::CALLZ(WORD) |
                 I::CALLC(WORD) |
                 I::RETC(WORD)
-                => {
-                    let l_byte = self.mmu.get_byte_at_offset() as u16;
-                    self.mmu.incr_rom();
-                    let h_byte = self.mmu.get_byte_at_offset() as u16;
-                    self.mmu.incr_rom();
-                    //println!("Register Data Load: 0x{:02x} 0x{:02x}", l_byte, h_byte);
-                    RegData::Word((h_byte << 8) + l_byte)
+                    => {
+                        let l_byte = self.cpu.p_fetch(&self.mmu) as u16;
+                        let h_byte = self.cpu.p_fetch(&self.mmu) as u16;
+                        RegData::Word((h_byte << 8) + l_byte)
                 }
                 _ => { RegData::None },
-            };
+            }; // End Decode
+
+            // Debug: print instruction
             match data {
                 RegData::Byte(data) => {
                     println!("0x{:04x}: {:?}, 0x{:02x}", inst_off, inst, data);
@@ -138,6 +128,8 @@ pub mod emulator_context {
                     println!("0x{:04x}: {:?}", inst_off, inst);
                 }
             }
+
+            // Start Execute
         }
     }
 }

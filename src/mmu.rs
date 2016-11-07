@@ -162,6 +162,8 @@ impl MMU {
         self.rom = rom.to_owned();
     }
 
+    // Should only be used for debugging memory address;
+    // for getting the next program byte use `CPU.p_fetch()` instead.
     pub fn get_byte_at_offset(&self) -> u8 {
         *self.rom.get(self.rom_offset as usize).unwrap()
     }
@@ -175,19 +177,12 @@ impl MMU {
     }
 
     /// Read byte
-    pub fn rb(&mut self, cpu: &CPU, addr: u16) -> u8 {
+    pub fn rb(&self, cpu: &CPU, addr: u16) -> u8 {
         match addr & 0xF000 {
             // Rom bank 0
-            0x0000 => {
-                if self.in_bios {
-                    if addr < 0x0100 {
-                        return self.bios[addr as usize];
-                    } else if cpu.get_pc() == 0x0100 {
-                        self.in_bios = false;
-                    }
-                } else {
-                    return *self.rom.get(addr as usize).unwrap();
-                }
+            0x0000 ... 0x0fff => {
+                // TODO add bios maybe?
+                return *self.rom.get(addr as usize).unwrap();
             },
             0x1000 ... 0x3000 => {
                 return *self.rom.get(addr as usize).unwrap();
