@@ -35,12 +35,14 @@ pub mod emulator_context {
     /// The Emulator context holds all of pieces to the running state of an
     // emulator.
     pub struct EmulatorContext {
+        cycles: u64,
         cpu: cpu::CPU,
         mmu: mmu::MMU,
     }
 
     pub fn new() -> EmulatorContext {
         EmulatorContext {
+            cycles: 0,
             cpu: cpu::CPU::new(),
             mmu: mmu::MMU::new(),
         }
