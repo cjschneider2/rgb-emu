@@ -100,6 +100,7 @@ pub enum Instruction {
     RES  (u8, Register),
 }
 
+#[derive(Debug)]
 pub struct CPU {
     halt:    bool,
     stop:    bool,
@@ -835,6 +836,38 @@ impl CPU {
                 self.reg_e = (data & 0x00FF) as u8;
             },
             _ => { unreachable!(); }
+        }
+    }
+
+    /// LoadDecrement(reg_a, reg_b)
+    pub fn ldd_r_r(&mut self, mmu: &mut MMU, r_a: Register, r_b: Register) {
+        // There are only two variants here... ldd((hl-), a) & ldd(a, (hl-))
+        match r_a {
+            Register::HL => {
+                // put value in reg A into value pointed to by HL
+            },
+            Register::A => {
+                // put value pointed to from address in reg HL into reg A
+            },
+            _ => { unreachable!(); }
+        }
+    }
+
+    /// XOR(register)
+    pub fn xor_r(&mut self, reg: Register) {
+        match reg {
+            Register::A => { self.reg_a ^= self.reg_a; }
+            Register::B => { self.reg_b ^= self.reg_a; }
+            Register::C => { self.reg_c ^= self.reg_a; }
+            Register::D => { self.reg_d ^= self.reg_a; }
+            Register::E => { self.reg_e ^= self.reg_a; }
+            Register::H => { self.reg_h ^= self.reg_a; }
+            Register::L => { self.reg_l ^= self.reg_a; }
+            Register::HL => {
+                self.reg_h ^= self.reg_h;
+                self.reg_l ^= self.reg_l;
+            }
+            _ => unreachable!()
         }
     }
 

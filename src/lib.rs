@@ -138,8 +138,12 @@ pub mod emulator_context {
             // Start Execute
             match inst {
                 I::LD(reg, WORD) => { self.cpu.ld_r_w(reg, data); self.cycles += 12; },
-                I::XOR(reg) => { self.xor_r(reg); self.cycles += 8; }
-                _ => unimplemented!()
+                I::XOR(reg) => { self.cpu.xor_r(reg); self.cycles += 8; },
+                //I::LDD(r_a, r_b) => { self.cpu.ldd_r_r(r_a, r_b); self.cycles += 8; },
+                _ => {
+                    println!("{:#?}", self.cpu);
+                    unimplemented!()
+                }
             }
             // End Execute
         }

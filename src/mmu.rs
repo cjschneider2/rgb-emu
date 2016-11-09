@@ -87,9 +87,9 @@ pub struct MMU {
     mbc: u32, // TODO: ???
     rom_offset: u16,
     ram_offset: u16,
-    eram: Vec<u8>,
-    wram: Vec<u8>,
-    zram: Vec<u8>,
+    eram: [u8; 0x1FFF], // (E)xternal ram => [A000 -> BFFF]
+    wram: [u8; 0x1FFF], // internal (W)ork ram => [C000 -> DFFF]
+    zram: [u8; 0xFF], // (Z)ero page ram => [ff80 -> ffff]
     in_bios: bool,
     in_e: bool, // TODO: ???
     int_flag: bool,
@@ -139,9 +139,9 @@ impl MMU {
             mbc: 0, // TODO: ???
             rom_offset: 0x0, // 0x4000,
             ram_offset: 0x0,
-            eram: Vec::<u8>::new(),
-            wram: Vec::<u8>::new(),
-            zram: Vec::<u8>::new(),
+            eram: [0; 0x1FFF],
+            wram: [0; 0x1FFF],
+            zram: [0; 0xFF],
             in_bios: true,
             in_e: false,
             int_flag: false,
@@ -260,9 +260,73 @@ impl MMU {
     }
 
     /// Writes a byte to the given address
-    pub fn wb(&self, cpu: &CPU, addr: u16, val: u8) {
-        // write 8-bit byte from memory
-        unimplemented!();
+    pub fn wb(&mut self, addr: u16, val: u8) {
+        match addr & 0xF000 {
+            // Rom bank 0
+            0x0000 ... 0x7000 => {
+                unreachable!(); // The rom should not write here...
+            },
+            // Video RAM
+            0x8000 ... 0x9000 => {
+                //return *GPU.vram.get((addr & 0x1FFF) as usize).unwrap();
+                unimplemented!();
+            },
+            // External RAM
+            0xA000 ... 0xB000 => {
+                let offset = self.ram_offset as usize + (addr & 0x1FFF) as usize;
+                //self.eram.insert(offset, val);
+            },
+            // Work RAM & Echo
+            0xC000 ... 0xE000 => {
+                //self.wram.insert((addr & 0x1FFF) as usize, val);
+            },
+            // Everything Else
+            0xF000 => {
+                match addr & 0x0F00 {
+                    // Echo RAM (handeled as if it were the working ram)
+                    0x000 ... 0xD00 => {
+                        //self.wram.insert((addr & 0x1FFF) as usize, val);
+                    },
+                    // OAM (Sprite Attribute Memory)
+                    0xE00 => {
+                        unimplemented!();
+                    },
+                    // Zero-page RAM, I/O, Interrupts
+                    0xF00 => {
+                        if addr == 0xFFFF {
+                            //self.in_e = val;
+                        } else if addr > 0xFF7F {
+                            //self.zram.insert((addr & 0x7F) as usize).unwrap();
+                        }
+                        match addr & 0xF0 {
+                            0x00 => {
+                                match addr & 0xF {
+                                    // Directional Pad
+                                    0x0 => { unimplemented!() },
+                                    // TODO: Timer flags?
+                                    0x4 ... 0x7 => { unimplemented!() },
+                                    0xE => {
+                                        //return self.int_flag as u8;
+                                    },
+                                    0xF => {
+                                        //return 0u8;
+                                    },
+                                    _ => { unreachable!(); }
+                                }
+                            }
+                            0x10 => {
+                                //return 0u8;
+                            },
+                            // GPU read-byte
+                            0x40 ... 0x70 => { unreachable!()},
+                            _ => {unreachable!()},
+                        }
+                    },
+                    _ => {unreachable!()},
+                }
+            },
+            _ => {unreachable!()},
+        }
     }
 
     /// Writes a word (2-Bytes) to the given address
