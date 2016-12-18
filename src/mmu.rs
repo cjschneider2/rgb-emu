@@ -87,9 +87,10 @@ pub struct MMU {
     mbc: u32, // TODO: ???
     rom_offset: u16,
     ram_offset: u16,
-    eram: [u8; 0x1FFF], // (E)xternal ram => [A000 -> BFFF]
-    wram: [u8; 0x1FFF], // internal (W)ork ram => [C000 -> DFFF]
-    zram: [u8; 0xFF], // (Z)ero page ram => [ff80 -> ffff]
+    fbuf: [u8; 0x2000], // graphics buffer
+    eram: [u8; 0x2000], // (E)xternal ram => [A000 -> BFFF]
+    wram: [u8; 0x2000], // internal (W)ork ram => [C000 -> DFFF]
+    zram: [u8; 0x100], // (Z)ero page ram => [ff80 -> ffff]
     in_bios: bool,
     in_e: bool, // TODO: ???
     int_flag: bool,
@@ -139,9 +140,10 @@ impl MMU {
             mbc: 0, // TODO: ???
             rom_offset: 0x0, // 0x4000,
             ram_offset: 0x0,
-            eram: [0; 0x1FFF],
-            wram: [0; 0x1FFF],
-            zram: [0; 0xFF],
+            fbuf: [0; 0x2000],
+            eram: [0; 0x2000],
+            wram: [0; 0x2000],
+            zram: [0; 0x100],
             in_bios: true,
             in_e: false,
             int_flag: false,
@@ -194,8 +196,7 @@ impl MMU {
             },
             // Video RAM
             0x8000 ... 0x9000 => {
-                //return *GPU.vram.get((addr & 0x1FFF) as usize).unwrap();
-                unimplemented!();
+                return *self.fbuf.get((addr & 0x1FFF) as usize).unwrap();
             },
             // External RAM
             0xA000 ... 0xB000 => {
@@ -268,8 +269,7 @@ impl MMU {
             },
             // Video RAM
             0x8000 ... 0x9000 => {
-                //return *GPU.vram.get((addr & 0x1FFF) as usize).unwrap();
-                unimplemented!();
+                self.fbuf[(addr & 0x1FFF) as usize] = val;
             },
             // External RAM
             0xA000 ... 0xB000 => {

@@ -137,11 +137,33 @@ pub mod emulator_context {
 
             // Start Execute
             match inst {
-                I::LD(reg, WORD) => { self.cpu.ld_r_w(reg, data); self.cycles += 12; },
-                I::XOR(reg) => { self.cpu.xor_r(reg); self.cycles += 8; },
-                //I::LDD(r_a, r_b) => { self.cpu.ldd_r_r(r_a, r_b); self.cycles += 8; },
+                I::LD(reg, WORD) => {
+                    self.cpu.ld_r_w(reg, data);
+                    self.cycles += 12;
+                },
+                I::XOR(reg) => {
+                    self.cpu.xor_r(&mut self.mmu, reg);
+                    self.cycles += 8;
+                },
+                I::LDD(r_a, r_b) => {
+                    self.cpu.ldd_r_r(&mut self.mmu, r_a, r_b);
+                    self.cycles += 8;
+                },
+                I::BIT(bit, reg) => {
+                    if reg == R::HL {
+                        self.cycles += 16;
+                    } else {
+                        self.cycles += 8;
+                    }
+                    self.cpu.bit_b_r(&mut self.mmu, bit, reg);
+                },
+                I::JRNZ(_) => {
+                    self.cpu.jpnz(data as u8);
+                    self.cycles += 8;
+                },
                 _ => {
                     println!("{:#?}", self.cpu);
+                    println!("Instruction : {:#?}", inst);
                     unimplemented!()
                 }
             }

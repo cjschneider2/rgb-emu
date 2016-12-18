@@ -17,7 +17,7 @@ use mmu::MMU;
 
 // Register types
 // NOTE: C0 is really (0xFF00 + C) == (C)
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Register {
     // 8-bit registers
     A, B, D, H, F, C, C0, E, L,
@@ -30,7 +30,7 @@ pub enum Register {
 
 
 // Instruction List
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Instruction {
     ExtInstr, // Extended Instruction Set use byte (0xCB)
     LD   (Register, Register),
@@ -819,7 +819,9 @@ impl CPU {
      * INSTRUCTIONS
      */
 
-    /// Load(register, word)
+    /// Load( Register, word )
+    /// Put the u16 value `word` into the double sized `register`
+    /// only valid with `BC`, `DE`, `HL`, & SP.
     pub fn ld_r_w(&mut self, reg: Register, data: u16) {
         match reg {
             Register::SP => { self.reg_sp = data; },
@@ -839,57 +841,150 @@ impl CPU {
         }
     }
 
-    /// LoadDecrement(reg_a, reg_b)
+    /// LoadDecrement( (HL), A )
+    /// Put `A` into the memory at address `(HL)`, decrement `HL`
+    /// LoadDecrement( A, (HL) )
+    /// Put value at address `(HL)` into `A`, decremnt `HL`
     pub fn ldd_r_r(&mut self, mmu: &mut MMU, r_a: Register, r_b: Register) {
-        // There are only two variants here... ldd((hl-), a) & ldd(a, (hl-))
         match r_a {
             Register::HL => {
-                // put value in reg A into value pointed to by HL
+                let h:u16 = self.reg_h as u16;
+                let l:u16 = self.reg_l as u16;
+                let addr:u16 = ( h << 8 ) + l;
+                mmu.wb(addr, self.reg_a);
             },
             Register::A => {
-                // put value pointed to from address in reg HL into reg A
+                let addr:u16 = ( self.reg_h as u16 ) << 8
+                               + self.reg_l as u16;
+                self.reg_a = mmu.rb(self, addr);
             },
             _ => { unreachable!(); }
         }
     }
 
-    /// XOR(register)
-    pub fn xor_r(&mut self, reg: Register) {
+    /// XOR( Register )
+    /// Locgical exclusive OR `n` with register `A`, result in register `A`
+    /// flags: Z - Set if result is zero
+    ///        N - Reset
+    ///        H - Reset
+    ///        C - Reset
+    pub fn xor_r(&mut self, mmu: &mut MMU, reg: Register) {
         match reg {
             Register::A => { self.reg_a ^= self.reg_a; }
-            Register::B => { self.reg_b ^= self.reg_a; }
-            Register::C => { self.reg_c ^= self.reg_a; }
-            Register::D => { self.reg_d ^= self.reg_a; }
-            Register::E => { self.reg_e ^= self.reg_a; }
-            Register::H => { self.reg_h ^= self.reg_a; }
-            Register::L => { self.reg_l ^= self.reg_a; }
-            Register::HL => {
-                self.reg_h ^= self.reg_h;
-                self.reg_l ^= self.reg_l;
+            Register::B => { self.reg_a ^= self.reg_b; }
+            Register::C => { self.reg_a ^= self.reg_c; }
+            Register::D => { self.reg_a ^= self.reg_d; }
+            Register::E => { self.reg_a ^= self.reg_e; }
+            Register::H => { self.reg_a ^= self.reg_h; }
+            Register::L => { self.reg_a ^= self.reg_l; }
+            Register::HL => { // comp against value at (HL)
+                let h:u16 = self.reg_h as u16;
+                let l:u16 = self.reg_l as u16;
+                let addr:u16 = ( h << 8 ) + l;
+                self.reg_a ^= mmu.rb(self, addr);
             }
             _ => unreachable!()
         }
+        if self.reg_a == 0 { self.zero_flag = true; }
+        self.sub_flag = false;
+        self.half_carry_flag = false;
+        self.carry_flag = false;
     }
 
-    // control functions
+    /// BIT( bit, Register )
+    /// Test bit `b` in register `r`
+    /// flags: Z - Set if bit `b` of register `r` is 0
+    ///        N - Reset
+    ///        H - Set
+    ///        C - Not affected
+    pub fn bit_b_r(&mut self, mmu: &mut MMU, bit: u8, reg: Register) {
+        let mask = 0x1 << bit;
+        let val = match reg {
+            Register::A => { self.reg_a & mask }
+            Register::B => { self.reg_b & mask }
+            Register::C => { self.reg_c & mask }
+            Register::D => { self.reg_d & mask }
+            Register::E => { self.reg_e & mask }
+            Register::H => { self.reg_h & mask }
+            Register::L => { self.reg_l & mask }
+            // test value at address of (HL)
+            Register::HL => {
+                let h:u16 = self.reg_h as u16;
+                let l:u16 = self.reg_l as u16;
+                let addr:u16 = ( h << 8 ) + l;
+                mmu.rb(self, addr) & mask
+            }
+            _ => unreachable!()
+        };
+        if val == 0 {
+            self.zero_flag = true;
+        }
+        self.half_carry_flag = true;
+        self.sub_flag = false;
+    }
+
+    /// JPNZ ( Address )
+    /// Jump to `Address` if the CPU's `zero` flag is reset (false)
+    pub fn jpnz(&mut self, offset: u8) {
+        if self.zero_flag == false {
+            self.reg_pc += offset as u16;
+        }
+    }
+
+    /// JPZ ( Address )
+    /// Jump to `Address` if the CPU's `zero` flag is set (true)
+    pub fn jpz(&mut self, offset: u8) {
+        if self.zero_flag == true {
+            self.reg_pc += offset as u16;
+        }
+    }
+
+    /// JPC ( Address )
+    /// Jump to `Address` if the CPU's `carry` flag is set (true)
+    pub fn jpc(&mut self, offset: u8) {
+        if self.carry_flag == true {
+            self.reg_pc += offset as u16;
+        }
+    }
+
+    /// JPNC ( Address )
+    /// Jump to `Address` if the CPU's `carry` flag is reset (false)
+    pub fn jpnc(&mut self, offset: u8) {
+        if self.carry_flag == false {
+            self.reg_pc += offset as u16;
+        }
+    }
+
+    /*
+     * control functions
+     */
+
     /// (NOP): No-operation
-    fn nop(&mut self) {
-        unimplemented!();
+    /// Does nothing but takes 4 processor cycles
+    pub fn nop(&mut self) {
+
     }
+
     /// (HALT): halt the processor
-    fn halt(&mut self) {
+    pub fn halt(&mut self) {
         unimplemented!();
     }
-    /// (DI): TODO: ???
-    fn di(&mut self) {
+
+    /// (DI): Disable Interrupts
+    /// This instruction disables interrupts 4 cycles after the `DI`
+    /// instruction is executed.
+    pub fn di(&mut self) {
         unimplemented!();
     }
-    /// (EI): TODO: ???
-    fn ei(&mut self) {
+
+    /// (EI): Enable Interrupts
+    /// Enable interrupts after the EI instruction is executed ( 4 cycles )
+    pub fn ei(&mut self) {
         unimplemented!();
     }
+
     /// (UNDEF): Undefined operation
-    fn undef(&mut self) {
+    pub fn undef(&mut self) {
         unreachable!();
     }
 
